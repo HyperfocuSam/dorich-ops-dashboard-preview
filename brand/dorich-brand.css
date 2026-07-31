@@ -1,0 +1,153 @@
+/* ============================================================================
+   DoRich Brand System — tokens + components
+   ----------------------------------------------------------------------------
+   Sources, newest first (per the "newest dated source wins, name the date" rule):
+     · dorich.co live site, scraped 2026-07-31  → the LEAD source for colour + type
+     · DoRich Youth company deck design system, 2026-07-07 → editorial/marketing layer
+     · logo geometry: the two-path bookmark mark in the live site header
+
+   The live site and the deck DISAGREE on orange. The live site is newer and is
+   what customers actually see, so #FF7300 leads and the deck's #EA5A1E is kept
+   as a secondary "ember" for editorial work only.
+   ========================================================================== */
+
+:root{
+  /* ---- Core brand, from the live site (2026-07-31) ---- */
+  --dr-orange:      #FF7300;   /* primary accent · nav links · CTA fill        */
+  --dr-orange-mark: #FF6700;   /* exact logo fill                             */
+  --dr-ink:         #1F2937;   /* site header rail · primary dark             */
+  --dr-espresso:    #2F1B17;   /* secondary dark brown                        */
+  --dr-paper:       #F2EFE9;   /* page background                             */
+  --dr-cream:       #EFEBE4;   /* logo counter-form · warm off-white text     */
+
+  /* ---- Editorial layer, from the company deck (2026-07-07) ---- */
+  --dr-navy:  #14223F;
+  --dr-amber: #F4AA29;
+  --dr-sun:   #FBC63A;
+  --dr-ember: #EA5A1E;   /* deck orange — do NOT use as the primary accent */
+  --dr-sky:   #A8CEF3;
+  --dr-char:  #5F5E5B;
+
+  /* ---- HUD / dark-product surfaces (derived for the ops dashboard) ---------
+     DoRich's own site chrome is a DARK NAVY bar carrying an orange logo, so a
+     dark navy product surface is brand-faithful, not a departure from it. */
+  --dr-void:  #0A1220;
+  --dr-deep:  #0C1526;
+  --dr-panel: #111D33;
+  --dr-raise: #16243D;
+
+  --dr-hud-line:  rgba(255,115,0,.26);
+  --dr-hud-line2: rgba(239,235,228,.13);
+  --dr-hud-glow:  rgba(255,115,0,.38);
+
+  --dr-txt:   #EFEBE4;
+  --dr-txt-2: #A9B4C6;
+  --dr-txt-3: #6E7C93;
+
+  /* ---- Data colours ------------------------------------------------------
+     Both sets cleared all six checks of the dataviz validator against their
+     own surface. Brand orange is deliberately NOT a series colour — it means
+     "DoRich" and "spend", so reusing it for a category would muddy both. */
+  --dr-d-confirmed-dark: #14A5B8;   /* teal   */
+  --dr-d-noreply-dark:   #7A68D8;   /* violet */
+  --dr-d-rejected-dark:  #D33B4C;   /* red    */
+
+  --dr-d-confirmed-lite: #1A7F5A;
+  --dr-d-noreply-lite:   #7A6BB0;
+  --dr-d-rejected-lite:  #C13530;
+
+  /* ---- Status ---- */
+  --dr-good: #14A5B8; --dr-warn: #C98A1E; --dr-crit: #D33B4C; --dr-idle: #6E7C93;
+
+  /* ---- Type ----
+     The live site sets a MONOSPACE stack on headings and FZLanTingHei on body.
+     Mono headings are the reason a technical/HUD treatment reads as DoRich
+     rather than as generic sci-fi. */
+  --dr-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas,
+             "Liberation Mono", "Courier New", monospace;
+  --dr-sans: "FZLanTingHei", "Poppins", ui-sans-serif, system-ui, -apple-system,
+             "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans TC", "PingFang HK", sans-serif;
+  --dr-tc:   "Noto Sans TC", "PingFang HK", "Hiragino Sans CNS", sans-serif;
+
+  /* ---- Geometry ---- */
+  --dr-unit: 4px;
+  --dr-radius: 4px;        /* site base radius */
+  --dr-radius-panel: 12px;
+  --dr-pill: 9999px;       /* site buttons are fully round */
+}
+
+/* ============================ COMPONENTS ================================= */
+
+/* Pill button — the site's own CTA shape */
+.dr-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  border-radius:var(--dr-pill); padding:9px 20px; border:0; cursor:pointer;
+  font-family:var(--dr-sans); font-weight:700; font-size:13px; line-height:1;
+  background:var(--dr-orange); color:#fff; transition:filter .15s, transform .12s;
+}
+.dr-btn:hover{filter:brightness(1.08)}
+.dr-btn:active{transform:scale(.97)}
+.dr-btn--ghost{background:transparent; color:var(--dr-orange); box-shadow:inset 0 0 0 1px var(--dr-orange)}
+
+/* Section rule — the short orange dash the site sets above every headline */
+.dr-rule{display:block; width:34px; height:3px; background:var(--dr-orange); border-radius:2px}
+
+/* Display heading — the site's bold ITALIC treatment (理財 | 投資 | 創業) */
+.dr-display{font-family:var(--dr-sans); font-weight:800; font-style:italic; letter-spacing:-.01em}
+
+/* Eyebrow — mono, letterspaced, uppercase */
+.dr-eyebrow{
+  font-family:var(--dr-mono); font-size:10.5px; font-weight:700;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--dr-txt-3);
+}
+
+/* All figures are tabular mono — a dashboard number must never reflow */
+.dr-num{font-family:var(--dr-mono); font-variant-numeric:tabular-nums; letter-spacing:-.01em}
+
+/* HUD panel — thin rule, inner top highlight, and corner brackets drawn with
+   gradients so no extra elements are needed. */
+.dr-hud{
+  position:relative; background:
+    linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,0) 120px),
+    var(--dr-panel);
+  border:1px solid var(--dr-hud-line2); border-radius:var(--dr-radius-panel);
+  box-shadow:0 18px 44px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.dr-hud::before,.dr-hud::after{
+  content:""; position:absolute; width:15px; height:15px; pointer-events:none;
+  border-color:var(--dr-hud-line); border-style:solid; border-width:0;
+}
+.dr-hud::before{top:-1px; left:-1px; border-top-width:2px; border-left-width:2px;
+  border-top-left-radius:var(--dr-radius-panel)}
+.dr-hud::after{bottom:-1px; right:-1px; border-bottom-width:2px; border-right-width:2px;
+  border-bottom-right-radius:var(--dr-radius-panel)}
+
+/* Scanline + grid texture for the HUD backdrop. Kept very low contrast — it is
+   atmosphere, and atmosphere must never compete with a number. */
+.dr-scan{
+  position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.5;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px),
+    linear-gradient(90deg, var(--dr-hud-line2) 1px, transparent 1px),
+    linear-gradient(0deg,  var(--dr-hud-line2) 1px, transparent 1px);
+  background-size:100% 3px, 68px 68px, 68px 68px;
+}
+
+/* Status chip — always icon + word, never colour alone */
+.dr-chip{
+  display:inline-flex; align-items:center; gap:5px; border-radius:var(--dr-pill);
+  padding:3px 10px 3px 7px; font-family:var(--dr-mono);
+  font-size:10.5px; font-weight:700; letter-spacing:.04em; white-space:nowrap;
+}
+.dr-chip--good{background:rgba(20,165,184,.16); color:#5FD3E2; box-shadow:inset 0 0 0 1px rgba(20,165,184,.4)}
+.dr-chip--warn{background:rgba(201,138,30,.16); color:#E5B454; box-shadow:inset 0 0 0 1px rgba(201,138,30,.4)}
+.dr-chip--crit{background:rgba(211,59,76,.16);  color:#F0838F; box-shadow:inset 0 0 0 1px rgba(211,59,76,.42)}
+.dr-chip--idle{background:rgba(110,124,147,.16);color:#A9B4C6; box-shadow:inset 0 0 0 1px rgba(110,124,147,.36)}
+
+/* Soft circle decoration — the beige blobs scattered across the site */
+.dr-blob{position:absolute; border-radius:50%; background:rgba(255,115,0,.05); pointer-events:none}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-delay:0ms !important;
+    transition-duration:.01ms !important}
+}

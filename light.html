@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoRich Operations Dashboard — 原型 Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* DoRich brand — pixel-sampled from the company deck design system */
+  --ink:#14223F; --navy:#16264A; --ink-black:#141720;
+  --paper:#F5F1E6; --amber:#F4AA29; --orange:#EA5A1E; --sky:#A8CEF3;
+  --char:#5F5E5B; --grey:#A3A29E;
+
+  /* Chart surface + validated data colours (dataviz validator, light mode, all six checks) */
+  --surface:#FCFCFB;
+  --c-confirmed:#1A7F5A;   /* good     */
+  --c-noreply:#7A6BB0;     /* unknown  */
+  --c-rejected:#C13530;    /* serious  */
+  --c-line:#14223F;
+
+  --st-good:#1A7F5A; --st-warn:#B8791A; --st-crit:#C13530; --st-idle:#6B7280;
+
+  --bg:#F2F1EC;
+  --hair:rgba(255,255,255,.85);
+  --hair-in:rgba(20,34,63,.09);
+  --txt:#1B1F2A; --txt-2:#555350; --txt-3:#7C7A73;
+
+  --r:16px;
+  --ease:cubic-bezier(0.22,1,0.36,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  color:var(--txt);
+  /* Gradient field — glass needs something behind it to refract. DoRich palette. */
+  background:
+    radial-gradient(900px 620px at 86% -6%, rgba(20,34,63,.30), transparent 58%),
+    radial-gradient(760px 560px at -6% 26%, rgba(234,90,30,.20), transparent 56%),
+    radial-gradient(840px 640px at 58% 112%, rgba(244,170,41,.32), transparent 58%),
+    radial-gradient(520px 400px at 34% 44%, rgba(255,255,255,.70), transparent 55%),
+    var(--bg);
+  background-attachment:fixed;
+  font-family:"Poppins","Noto Sans TC","PingFang HK","Hiragino Sans CNS",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+/* diagonal sheen + drifting orb, both inert to pointer */
+body::before{
+  content:""; position:fixed; inset:-20%; pointer-events:none; z-index:0;
+  background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.62) 50%,transparent 58%);
+}
+body::after{
+  content:""; position:fixed; width:520px; height:520px; left:-130px; bottom:-150px;
+  border-radius:50%; pointer-events:none; z-index:0; filter:blur(70px);
+  background:radial-gradient(circle at 40% 40%, rgba(168,206,243,.55), rgba(20,34,63,.18) 70%, transparent);
+  animation:drift 17s ease-in-out infinite alternate;
+}
+.topbar,.notice,.wrap{position:relative; z-index:1}
+
+/* ---------- Glass ---------- */
+.glass{
+  background:rgba(252,251,246,.55);
+  -webkit-backdrop-filter:blur(22px) saturate(1.3);
+  backdrop-filter:blur(22px) saturate(1.3);
+  border:1px solid var(--hair);
+  box-shadow:0 12px 36px rgba(20,34,63,.10), inset 0 1px 0 rgba(255,255,255,.9);
+}
+/* Data panels sit MORE opaque than the chrome — chart marks and small figures
+   must stay legible over whatever the gradient is doing behind them. */
+.glass-solid{
+  background:rgba(255,255,255,.86);
+  -webkit-backdrop-filter:blur(26px) saturate(1.25);
+  backdrop-filter:blur(26px) saturate(1.25);
+  border:1px solid var(--hair);
+  box-shadow:0 12px 36px rgba(20,34,63,.10), inset 0 1px 0 rgba(255,255,255,.95);
+}
+@supports not (backdrop-filter:blur(1px)){
+  .glass{background:rgba(252,251,246,.95)}
+  .glass-solid{background:rgba(255,255,255,.97)}
+}
+
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(42px,30px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp .5s var(--ease) both}
+.grid > .anim:nth-child(1){animation-delay:.04s}
+.grid > .anim:nth-child(2){animation-delay:.10s}
+.grid > .anim:nth-child(3){animation-delay:.16s}
+.grid > .anim:nth-child(4){animation-delay:.22s}
+.grid > .anim:nth-child(5){animation-delay:.28s}
+.foot.anim{animation-delay:.34s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-delay:0ms !important;
+    transition-duration:.01ms !important}
+}
+h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.01em}
+
+/* ---------- Header ---------- */
+.topbar{
+  color:#fff; padding:0 20px; margin:14px auto 0; max-width:1392px; border-radius:18px;
+  background:rgba(20,34,63,.72);
+  -webkit-backdrop-filter:blur(22px) saturate(1.4); backdrop-filter:blur(22px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.18);
+  box-shadow:0 14px 40px rgba(20,34,63,.24), inset 0 1px 0 rgba(255,255,255,.22);
+}
+@supports not (backdrop-filter:blur(1px)){.topbar{background:rgba(20,34,63,.97)}}
+.topbar-in{max-width:1360px; margin:0 auto; display:flex; align-items:center; gap:16px; min-height:64px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:12px; padding:10px 0}
+.brand svg{height:34px; width:auto; display:block; flex:none}
+.brand-txt{line-height:1.15}
+.brand-txt strong{display:block; font-size:15px; font-weight:700; letter-spacing:.01em}
+.brand-txt span{display:block; font-size:11px; color:#B9C4DA; font-weight:500}
+.topbar-sp{flex:1 1 auto; min-width:8px}
+.chip{
+  display:inline-flex; align-items:center; gap:7px; background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18); color:#EAF0FA;
+  border-radius:999px; padding:7px 13px; font-size:12px; font-weight:500; white-space:nowrap;
+}
+.chip b{font-weight:600; color:#fff}
+
+/* ---------- Sample-data notice ---------- */
+.notice{
+  color:#5A4408; padding:12px 18px; font-size:13px;
+  max-width:1392px; margin:14px auto 0; border-radius:14px;
+  background:rgba(253,243,216,.72);
+  -webkit-backdrop-filter:blur(18px) saturate(1.3); backdrop-filter:blur(18px) saturate(1.3);
+  border:1px solid rgba(235,215,154,.85);
+  box-shadow:0 8px 26px rgba(20,34,63,.08), inset 0 1px 0 rgba(255,255,255,.7);
+}
+@supports not (backdrop-filter:blur(1px)){.notice{background:rgba(253,243,216,.97)}}
+.notice-in{max-width:1360px; margin:0 auto; display:flex; gap:11px; align-items:flex-start}
+.notice svg{flex:none; margin-top:1px}
+.notice b{font-weight:700}
+
+/* ---------- Layout ---------- */
+.wrap{max-width:1360px; margin:0 auto; padding:20px 20px 56px}
+.grid{display:grid; gap:16px; grid-template-columns:repeat(12,1fr); align-items:start}
+.card{border-radius:var(--r); padding:18px; min-width:0}
+.col-4{grid-column:span 4} .col-5{grid-column:span 5} .col-6{grid-column:span 6}
+.col-7{grid-column:span 7} .col-8{grid-column:span 8} .col-12{grid-column:span 12}
+
+.card-hd{display:flex; align-items:baseline; gap:10px; margin-bottom:4px; flex-wrap:wrap}
+.mod-no{
+  font-size:11px; font-weight:700; color:#fff; background:var(--ink);
+  width:20px; height:20px; border-radius:6px; display:inline-flex;
+  align-items:center; justify-content:center; flex:none; align-self:center;
+}
+.card-hd h2{font-size:15px}
+.card-hd .tc{font-size:13px; color:var(--txt-2); font-weight:500}
+.card-sub{font-size:12px; color:var(--txt-3); margin:2px 0 14px}
+
+/* ---------- Stat tiles ---------- */
+.tiles{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px}
+.tile{flex:1 1 120px; min-width:112px; background:rgba(255,255,255,.55); border:1px solid var(--hair-in); border-radius:10px; padding:11px 12px}
+.tile .lab{font-size:11px; color:var(--txt-3); font-weight:600; letter-spacing:.02em; margin-bottom:5px}
+.tile .val{font-size:21px; font-weight:700; color:var(--ink); line-height:1.1; font-variant-numeric:tabular-nums}
+.tile .delta{font-size:11px; font-weight:600; margin-top:3px; display:flex; align-items:center; gap:4px}
+.up{color:var(--st-crit)} .down{color:var(--st-good)} .flat{color:var(--txt-3)}
+
+/* ---------- Meter (credit card) ---------- */
+.meter-row{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; margin-bottom:7px}
+.meter-row .l{color:var(--txt-2); font-weight:600}
+.meter-row .r{color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums}
+.meter{position:relative; height:22px; background:rgba(20,34,63,.09); border-radius:7px; overflow:visible}
+.meter-fill{height:100%; border-radius:7px; background:var(--ink); transition:width .5s ease}
+.meter-thr{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--st-crit)}
+.meter-cap{display:flex; justify-content:space-between; gap:12px; font-size:11px; color:var(--txt-3); margin-top:8px}
+.thr-key{display:inline-flex; align-items:center; gap:5px; color:var(--st-crit); font-weight:600; white-space:nowrap}
+.thr-key i{width:2px; height:11px; background:var(--st-crit); display:inline-block; flex:none}
+
+/* ---------- Charts ---------- */
+.chart{width:100%; display:block; overflow:visible}
+.chart text{font-family:inherit}
+.gridline{stroke:#EDEBE4; stroke-width:1}
+.axis-lab{font-size:10px; fill:#8A8880; font-weight:500}
+.dot-hit{cursor:pointer}
+
+.legend{display:flex; gap:14px; flex-wrap:wrap; margin:12px 0 2px; font-size:12px}
+.legend .li{display:inline-flex; align-items:center; gap:6px; color:var(--txt-2); font-weight:500}
+.swatch{width:11px; height:11px; border-radius:3px; flex:none}
+
+/* ---------- Tooltip ---------- */
+#tip{
+  position:fixed; pointer-events:none; opacity:0; transition:opacity .12s;
+  background:var(--ink); color:#fff; border-radius:8px; padding:8px 11px;
+  font-size:12px; line-height:1.45; z-index:99; box-shadow:0 6px 20px rgba(0,0,0,.22);
+  max-width:230px;
+}
+#tip b{font-weight:700}
+#tip .k{color:#B9C4DA}
+
+/* ---------- Calendar ---------- */
+.cal{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; font-size:11px}
+.cal .dow{text-align:center; font-weight:700; color:var(--txt-3); padding:4px 0; font-size:10px}
+.cal .d{
+  aspect-ratio:1/1; border-radius:7px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; color:var(--txt-2); position:relative; font-variant-numeric:tabular-nums;
+}
+.cal .d.pad{color:#CFCDC6}
+.cal .d.ev{background:#FDF3D8; color:var(--ink); font-weight:700}
+.cal .d.ev::after{
+  content:""; position:absolute; left:50%; bottom:18%; transform:translateX(-50%);
+  width:4px; height:4px; border-radius:50%; background:var(--orange);
+}
+.cal .d.today{outline:2px solid var(--ink); outline-offset:-2px; font-weight:700}
+
+/* ---------- Task list ---------- */
+.tasks{list-style:none; margin:0; padding:0}
+.tasks li{display:flex; gap:9px; align-items:flex-start; padding:8px 0; border-bottom:1px solid #F1EFE9; font-size:12.5px}
+.tasks li:last-child{border-bottom:0}
+.box{width:15px; height:15px; border-radius:4px; border:1.5px solid #C9C6BD; flex:none; margin-top:1px; position:relative}
+.box.on{background:var(--st-good); border-color:var(--st-good)}
+.box.on::after{content:""; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg)}
+.tk-t{flex:1; min-width:0}
+.tk-t .n{display:block; color:var(--txt); font-weight:500}
+.tasks li.done .n{color:var(--txt-3); text-decoration:line-through}
+.tk-t .m{display:block; font-size:11px; color:var(--txt-3); margin-top:2px}
+.due{font-size:11px; font-weight:700; white-space:nowrap; padding-top:1px}
+.due.over{color:var(--st-crit)} .due.soon{color:var(--st-warn)} .due.ok{color:var(--txt-3)}
+
+/* ---------- Tables ---------- */
+.tbl-tabs{display:flex; gap:6px; margin-bottom:11px}
+.tb{
+  border:1px solid var(--hair-in); background:rgba(255,255,255,.6); color:var(--txt-2);
+  border-radius:8px; padding:6px 13px; font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+}
+.tb[aria-selected="true"]{background:var(--ink); color:#fff; border-color:var(--ink)}
+table{width:100%; border-collapse:collapse; font-size:12.5px}
+th{
+  text-align:left; font-size:10.5px; font-weight:700; color:var(--txt-3);
+  letter-spacing:.04em; text-transform:uppercase; padding:0 8px 7px; border-bottom:1px solid var(--hair-in);
+}
+td{padding:9px 8px; border-bottom:1px solid #F4F2EC; vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.num{text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink)}
+.pill{
+  display:inline-flex; align-items:center; gap:5px; border-radius:999px;
+  padding:3px 9px 3px 7px; font-size:11px; font-weight:700; white-space:nowrap;
+}
+.pill svg{flex:none}
+.p-paid{background:#E6F3ED; color:#126647}
+.p-up{background:#EEF0F4; color:#4A5262}
+.p-pend{background:#FBF0DC; color:#8A5B0B}
+.p-over{background:#FBE9E7; color:#9E2B22}
+
+/* ---------- Market tiles ---------- */
+.mk{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px}
+.mk-t{border:1px solid var(--hair-in); border-radius:10px; padding:11px 12px; background:rgba(255,255,255,.55); min-width:0}
+.mk-t .n{font-size:11px; font-weight:700; color:var(--txt-3); letter-spacing:.03em}
+.mk-t .v{font-size:18px; font-weight:700; color:var(--ink); margin-top:3px; font-variant-numeric:tabular-nums}
+.mk-t .c{font-size:11.5px; font-weight:700; margin-top:1px}
+.mk-t svg{margin-top:6px; display:block}
+.pos{color:var(--st-good)} .neg{color:var(--st-crit)}
+
+.news{list-style:none; margin:0; padding:0}
+.news li{padding:9px 0; border-bottom:1px solid #F1EFE9}
+.news li:last-child{border-bottom:0}
+.news .h{font-size:12.5px; font-weight:600; color:var(--txt); line-height:1.45}
+.news .m{font-size:11px; color:var(--txt-3); margin-top:3px; display:flex; gap:7px; flex-wrap:wrap}
+.news .src{font-weight:700; color:var(--txt-2)}
+.tag{background:#EEF0F4; color:#4A5262; border-radius:5px; padding:1px 6px; font-weight:700; font-size:10px}
+
+/* ---------- Footer note ---------- */
+.foot{
+  margin-top:16px; border-left:4px solid var(--ink);
+  border-radius:14px; padding:16px 18px; font-size:12.5px; color:var(--txt-2); line-height:1.65;
+}
+.foot h3{font-size:13px; color:var(--ink); margin-bottom:7px}
+.foot ul{margin:7px 0 0; padding-left:18px}
+.foot li{margin-bottom:4px}
+.foot b{color:var(--ink)}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1080px){
+  .col-4,.col-5,.col-6,.col-7,.col-8{grid-column:span 12}
+  .mk{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){
+  .wrap{padding:14px 12px 40px}
+  .grid{gap:12px}
+  .card{padding:14px}
+  .tile .val{font-size:18px}
+  .topbar-in{min-height:0; padding:10px 0}
+  .mk{grid-template-columns:repeat(2,1fr)}
+  table{font-size:11.5px}
+  td,th{padding-left:5px; padding-right:5px}
+}
+</style>
+</head>
+<body data-palette="#1A7F5A,#7A6BB0,#C13530">
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand">
+      <svg viewBox="0 0 82.313 108.43" role="img" aria-label="DoRich"><g fill="#fff"><path d="M73.944 38.612A9.5 9.5 0 0 0 75.6 37.2c4.511-4.837 3.64-13.907 3.486-15.23 0-7.542-.083-20.011-14.7-21.953L11.46 0a13.155 13.155 0 0 0-5.955 1.2A9.2 9.2 0 0 0 0 9.74v95.912a2.733 2.733 0 0 0 4.721 1.92l8.346-8.84a5.512 5.512 0 0 1 5.651-1.5l23.821 7.254c5.636 1.72 11.076.933 15.313-2.208 4.631-3.429 7.286-9.379 7.286-16.32l-.058-2.767L77.052 86.4a4.471 4.471 0 0 0 .931.1 4.353 4.353 0 0 0 2.751-.975 4.212 4.212 0 0 0 1.579-3.286v-25.9c0-8.341-2.749-14.195-8.369-17.733M60.923 85.959c0 5.591-2.033 10.305-5.579 12.931-3.136 2.323-7.246 2.877-11.572 1.562L19.953 93.2A9.7 9.7 0 0 0 10 95.837l-5.718 6.056.488-88.859a8.6 8.6 0 0 0 3.755 2.215 9780.09 9780.09 0 0 0 17.292 5.283l14.239 4.333c.85.235 20.806 6.007 20.806 29.379zM78.011 82.3l-12.927-3.475V54.244c0-26.794-23.692-33.389-23.858-33.432L27.049 16.5c-5.913-1.8-12.5-3.814-17.283-5.281a3.626 3.626 0 0 1-2.714-2.447 6.26 6.26 0 0 1-.083-2.324 2.326 2.326 0 0 1 1.758-1.937 11.335 11.335 0 0 1 2.733-.292h52.5c9.208 1.277 10.9 7.036 10.9 17.881l.017.276c.3 2.3.458 8.922-2.374 11.952-1.159 1.238-3.449 1.773-5.555 1.646l-.011 4.377c7.714 2.278 11.154 7.04 11.154 15.994v25.886l-.087.066"/><path d="M22.329 54.768c-.024 5.1-3.173 7.956-8.085 6.834a15.1 15.1 0 0 1-4.5-1.778l.075-16.15 4.893 1.118a9.976 9.976 0 0 1 7.618 9.976m-3.263-.656a5.8 5.8 0 0 0-4.315-5.912l-1.835-.419-.046 9.929a14.065 14.065 0 0 0 1.815.569c2.855.651 4.367-1.256 4.38-4.168"/><path d="M23.863 55.208c.023-4.877 3.117-7.857 7.287-6.9 4.227.965 7.268 5.346 7.245 10.223s-3.1 7.884-7.324 6.919c-4.171-.952-7.23-5.361-7.208-10.237M35.17 57.79c.014-2.891-1.663-5.437-4.036-5.979-2.354-.539-4.032 1.243-4.046 4.133-.013 2.846 1.645 5.411 4 5.95 2.373.542 4.07-1.258 4.083-4.1"/><path d="m17.728 82.658-2.038-5.369c-.311-.057-.64-.119-.987-.209a9.332 9.332 0 0 1-1.732-.626l-.083 4.956-3.232-.833.28-16.741 5.625 1.45a6.937 6.937 0 0 1 5.546 7.191c-.039 2.388-.927 3.909-2.423 4.531l2.516 6.545zm.107-10.823c.026-1.562-.688-2.71-2.642-3.214l-2.082-.537-.087 5.2a8.748 8.748 0 0 0 1.641.58c2.155.556 3.139-.177 3.17-2.03"/><path d="m23.5 67.332 3.178.819-.278 16.742-3.177-.819z"/><path d="M38.563 87.76a4.64 4.64 0 0 1-2.585-.062c-4.109-1.059-7.134-5.56-7.051-10.515s3.231-7.864 7.359-6.8a6.758 6.758 0 0 1 2.547 1.239l-.061 3.638a5.478 5.478 0 0 0-2.364-1.237c-2.41-.621-4.235.994-4.284 3.985a6.034 6.034 0 0 0 4.115 6.128 4.138 4.138 0 0 0 2.384.03z"/><path d="m53.792 75.141-.28 16.741-3.2-.823.117-6.965-6.155-1.586-.117 6.964-3.195-.823.28-16.742 3.195.824-.1 6.227 6.155 1.587.1-6.228z"/></g></svg>
+      <span class="brand-txt">
+        <strong>Operations Dashboard</strong>
+        <span>DoRich Group Limited · 營運儀表板</span>
+      </span>
+    </div>
+    <span class="topbar-sp"></span>
+    <span class="chip">期間 <b>2026年8月</b></span>
+    <span class="chip">更新 <b>08:00 HKT</b></span>
+    <a class="chip" href="./" style="color:#FFC98A;text-decoration:none">◂ 科技感版 HUD</a>
+  </div>
+</header>
+
+<div class="notice">
+  <div class="notice-in">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A6508" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>
+    <div><b>全部數字為示範數據（Sample data）</b>，由 Ada 憑空生成，只為展示版面與功能，並非 DoRich 的真實營運數字。接上真實數據源之後，同一版面會自動填入真數。此頁用作確認「要睇乜、點樣排」，不作任何業務判斷之用。</div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="grid">
+
+    <!-- ============ MODULE 1 ============ -->
+    <section class="card glass-solid anim col-7">
+      <div class="card-hd"><span class="mod-no">1</span><h2>Marketing / Ad Spend</h2><span class="tc">營銷廣告開支</span></div>
+      <p class="card-sub">Meta 廣告每日花費與信用卡額度消耗</p>
+
+      <div class="tiles">
+        <div class="tile"><div class="lab">本月累計花費</div><div class="val">$46,820</div><div class="delta up"><svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"><path d="M5 0l5 8H0z"/></svg>12.4% 對上月</div></div>
+        <div class="tile"><div class="lab">Cost per Lead</div><div class="val">$71.4</div><div class="delta down"><svg width="9" height="9" viewBox="0 0 10 10" fill="currentColor"><path d="M5 10L0 2h10z"/></svg>6.1% 更平</div></div>
+        <div class="tile"><div class="lab">新增 Lead</div><div class="val">656</div><div class="delta flat">8月 1–30 日</div></div>
+        <div class="tile"><div class="lab">剩餘預算</div><div class="val">$13,180</div><div class="delta flat">月初預算 $60,000</div></div>
+      </div>
+
+      <div id="spend-chart"></div>
+
+      <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--hair-in)">
+        <div class="meter-row"><span class="l">信用卡已用額度</span><span class="r">$52,400 / $80,000 · 65.5%</span></div>
+        <div class="meter">
+          <div class="meter-fill" style="width:65.5%"></div>
+          <div class="meter-thr" style="left:85%"></div>
+        </div>
+        <div class="meter-cap">
+          <span>財務同事每月結單日更新一次（約 1 分鐘）</span>
+          <span class="thr-key"><i></i>85% 警戒線 · 未觸發</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MODULE 3 (calendar) ============ -->
+    <section class="card glass-solid anim col-5">
+      <div class="card-hd"><span class="mod-no">3</span><h2>Events &amp; Tasks</h2><span class="tc">活動與任務</span></div>
+      <p class="card-sub">Google Calendar 活動自動生成準備任務</p>
+
+      <div class="cal" id="cal"></div>
+
+      <div style="margin-top:15px; padding-top:13px; border-top:1px solid var(--hair-in)">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px">
+          <strong style="font-size:12px; color:var(--ink)">本週待辦</strong>
+          <span style="font-size:11px; color:var(--txt-3)">4 / 7 完成</span>
+        </div>
+        <ul class="tasks">
+          <li class="done"><span class="box on"></span><span class="tk-t"><span class="n">預訂場地 — 投資入門班</span><span class="m">T-14 · 場地負責人</span></span><span class="due ok">已完成</span></li>
+          <li class="done"><span class="box on"></span><span class="tk-t"><span class="n">確認導師檔期</span><span class="m">T-14 · 課程統籌</span></span><span class="due ok">已完成</span></li>
+          <li><span class="box"></span><span class="tk-t"><span class="n">發出提醒電郵（第一輪）</span><span class="m">T-3 · Sales Team</span></span><span class="due over">逾期 1 日</span></li>
+          <li><span class="box"></span><span class="tk-t"><span class="n">印製講義及簽到表</span><span class="m">T-2 · 行政</span></span><span class="due soon">今日到期</span></li>
+          <li><span class="box"></span><span class="tk-t"><span class="n">物資點算與場地佈置</span><span class="m">T-1 · 行政</span></span><span class="due ok">8月4日</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ MODULE 2 ============ -->
+    <section class="card glass-solid anim col-12">
+      <div class="card-hd"><span class="mod-no">2</span><h2>Registration &amp; Attendance Funnel</h2><span class="tc">報名與出席漏斗 · 核心模組</span></div>
+      <p class="card-sub">Meta Lead Ads 報名 → Sales Team 電話跟進結果，按場次顯示</p>
+
+      <div class="tiles">
+        <div class="tile"><div class="lab">總報名</div><div class="val">564</div><div class="delta flat">5 場 · 8月</div></div>
+        <div class="tile"><div class="lab">確認出席</div><div class="val">382</div><div class="delta flat" style="color:var(--st-good); font-weight:700">67.7% 轉化</div></div>
+        <div class="tile"><div class="lab">未回覆</div><div class="val">117</div><div class="delta flat" style="color:var(--st-warn); font-weight:700">20.7% 待跟進</div></div>
+        <div class="tile"><div class="lab">拒絕出席</div><div class="val">65</div><div class="delta flat">11.5%</div></div>
+      </div>
+
+      <div id="funnel-chart"></div>
+
+      <div class="legend" id="funnel-legend"></div>
+      <p style="font-size:11px; color:var(--txt-3); margin:9px 0 0">
+        每條柱的總高度 = 該場總報名人數；三段為互斥的跟進結果，加起來等於總報名。段內數字為人數，確保色弱人士亦可讀。
+      </p>
+    </section>
+
+    <!-- ============ MODULE 4 ============ -->
+    <section class="card glass-solid anim col-7">
+      <div class="card-hd"><span class="mod-no">4</span><h2>Freelance Payment Schedule</h2><span class="tc">外判與內部付款排程</span></div>
+      <p class="card-sub">雙檢視：External 外判合作方 · Internal 內部結算</p>
+
+      <div class="tbl-tabs" role="tablist">
+        <button class="tb" role="tab" aria-selected="true" data-pane="ext">External 外判</button>
+        <button class="tb" role="tab" aria-selected="false" data-pane="int">Internal 內部</button>
+      </div>
+
+      <div id="pane-ext">
+        <table>
+          <thead><tr><th>對象</th><th>項目</th><th>到期日</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
+          <tbody>
+            <tr><td>陳氏設計工作室</td><td>課程視覺設計</td><td>8月5日</td><td class="num">$12,500</td><td><span class="pill p-over"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>逾期</span></td></tr>
+            <tr><td>Kelvin Lau</td><td>活動攝影 · 7月場</td><td>8月8日</td><td class="num">$6,800</td><td><span class="pill p-pend"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>待付</span></td></tr>
+            <tr><td>黃老師</td><td>客席導師費 × 2 堂</td><td>8月15日</td><td class="num">$9,000</td><td><span class="pill p-up"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 3v4M16 3v4"/><rect x="3" y="6" width="18" height="15" rx="2"/></svg>未到期</span></td></tr>
+            <tr><td>旺角培訓中心</td><td>場地租用 · 8月</td><td>8月20日</td><td class="num">$18,400</td><td><span class="pill p-up"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 3v4M16 3v4"/><rect x="3" y="6" width="18" height="15" rx="2"/></svg>未到期</span></td></tr>
+            <tr><td>Studio Nine</td><td>短片剪接 × 8 條</td><td>7月28日</td><td class="num">$4,200</td><td><span class="pill p-paid"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>已付</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="pane-int" hidden>
+        <table>
+          <thead><tr><th>同事</th><th>項目</th><th>到期日</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
+          <tbody>
+            <tr><td>Ada Cheng</td><td>7月場次超時津貼</td><td>8月7日</td><td class="num">$2,400</td><td><span class="pill p-pend"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>待付</span></td></tr>
+            <tr><td>Marco Ho</td><td>課程統籌獎金 · Q2</td><td>8月10日</td><td class="num">$8,000</td><td><span class="pill p-up"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 3v4M16 3v4"/><rect x="3" y="6" width="18" height="15" rx="2"/></svg>未到期</span></td></tr>
+            <tr><td>Janice Wong</td><td>墊支報銷 · 物資</td><td>8月12日</td><td class="num">$1,860</td><td><span class="pill p-up"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M8 3v4M16 3v4"/><rect x="3" y="6" width="18" height="15" rx="2"/></svg>未到期</span></td></tr>
+            <tr><td>Terence Lam</td><td>兼職導師 · 7月</td><td>7月30日</td><td class="num">$5,600</td><td><span class="pill p-paid"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>已付</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p style="font-size:11px; color:var(--txt-3); margin:12px 0 0; padding-top:11px; border-top:1px solid var(--hair-in)">
+        每月 25 日自動比對「本月已完成工作」與「已登記付款」，列出疑似漏單並電郵通知。
+      </p>
+    </section>
+
+    <!-- ============ MODULE 5 ============ -->
+    <section class="card glass-solid anim col-5">
+      <div class="card-hd"><span class="mod-no">5</span><h2>Global Markets News</h2><span class="tc">環球市場與新聞</span></div>
+      <p class="card-sub">報價每 15–30 分鐘更新 · 新聞摘要每日 08:00</p>
+
+      <div class="mk" id="mk"></div>
+
+      <div style="padding-top:13px; border-top:1px solid var(--hair-in)">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px">
+          <strong style="font-size:12px; color:var(--ink)">今日重點</strong>
+          <span style="font-size:11px; color:var(--txt-3)">AI 摘要 · 08:00</span>
+        </div>
+        <ul class="news">
+          <li><div class="h">聯儲局會議紀錄顯示對減息步伐取態審慎，市場預期九月維持不變。</div><div class="m"><span class="src">Reuters</span><span>08:12</span><span class="tag">納指</span></div></li>
+          <li><div class="h">金價於美元回軟下企穩每盎司 2,380 美元上方，連續第三日上升。</div><div class="m"><span class="src">Kitco</span><span>07:45</span><span class="tag">黃金</span></div></li>
+          <li><div class="h">恒指早段高開，內銀股造好帶動大市，成交較上日增加。</div><div class="m"><span class="src">AAStocks</span><span>09:35</span><span class="tag">恒指</span></div></li>
+          <li><div class="h">科技股業績勝預期帶動標普 500 收市造好，半導體板塊領漲。</div><div class="m"><span class="src">Bloomberg</span><span>06:20</span><span class="tag">標普</span></div></li>
+        </ul>
+        <p style="font-size:11px; color:var(--txt-3); margin:10px 0 0">
+          規則：只陳述事實、不提供投資建議；升跌超過 1% 的市場優先列出。
+        </p>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="foot glass anim">
+    <h3>關於這個原型 · About this prototype</h3>
+    這一頁是「睇得見、㩒得到」的版面原型，用來喺任何人開始申請 API、寫腳本之前，先確認五大模組要顯示乜嘢、點樣排。
+    <ul>
+      <li><b>數字全部是示範用</b>，接上真實數據源後會自動換成真數。</li>
+      <li><b>報名漏斗已修正一處建議書的計算問題</b>：原稿把「報名」與「確認／拒絕／未回覆」四項並排堆疊，會重複計算；此處以總報名為柱高，三個互斥結果分段，加起來等於總數。</li>
+      <li><b>信用卡額度用橫向量條而非圓形錶</b>：同一個位置可以同時顯示已用、剩餘同 85% 警戒線，而且 Looker Studio 原生做得到。</li>
+      <li>配色已用色盲模擬驗證；綠與紅在紅綠色弱下較接近，所以每段都直接標上人數，不單靠顏色分辨。</li>
+    </ul>
+  </div>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+var SVGNS="http://www.w3.org/2000/svg";
+function el(n,a){var e=document.createElementNS(SVGNS,n);for(var k in a){if(a[k]!==null&&a[k]!==undefined)e.setAttribute(k,a[k]);}return e;}
+var tip=document.getElementById("tip");
+function showTip(html,x,y){
+  tip.innerHTML=html; tip.style.opacity="1";
+  var r=tip.getBoundingClientRect();
+  var left=x+14, top=y-r.height-12;
+  if(left+r.width>window.innerWidth-8) left=x-r.width-14;
+  if(left<8) left=8;
+  if(top<8) top=y+18;
+  tip.style.left=left+"px"; tip.style.top=top+"px";
+}
+function hideTip(){tip.style.opacity="0";}
+document.addEventListener("scroll",hideTip,{passive:true});
+
+/* ---------------- MODULE 1 · ad spend line ---------------- */
+var SPEND=[1180,1420,1650,980,1240,1890,2140,1760,1320,1080,1540,1980,2280,1840,1460,1220,1700,2050,2380,1920,1580,1340,1760,2160,2420,1880,1520,1280,1640,2010];
+function drawSpend(){
+  var host=document.getElementById("spend-chart"); if(!host) return;
+  host.innerHTML="";
+  var W=host.clientWidth||640, H=180, P={t:14,r:12,b:24,l:46};
+  var iw=W-P.l-P.r, ih=H-P.t-P.b;
+  var max=0; for(var i=0;i<SPEND.length;i++){ if(SPEND[i]>max) max=SPEND[i]; }
+  max=Math.ceil(max/500)*500;
+  var svg=el("svg",{class:"chart",viewBox:"0 0 "+W+" "+H,height:H,role:"img","aria-label":"每日廣告花費趨勢（示範數據）"});
+
+  for(var g=0; g<=4; g++){
+    var gy=P.t+ih-(ih*g/4);
+    svg.appendChild(el("line",{x1:P.l,y1:gy,x2:P.l+iw,y2:gy,class:"gridline"}));
+    var t=el("text",{x:P.l-8,y:gy+3.5,class:"axis-lab","text-anchor":"end"});
+    t.textContent="$"+((max*g/4)/1000).toFixed(1)+"k"; svg.appendChild(t);
+  }
+  function X(i){return P.l+(iw*i/(SPEND.length-1));}
+  function Y(v){return P.t+ih-(ih*v/max);}
+
+  var dArea="M"+X(0)+","+(P.t+ih), dLine="";
+  for(var i=0;i<SPEND.length;i++){
+    dArea+=" L"+X(i)+","+Y(SPEND[i]);
+    dLine+=(i?" L":"M")+X(i)+","+Y(SPEND[i]);
+  }
+  dArea+=" L"+X(SPEND.length-1)+","+(P.t+ih)+" Z";
+
+  var grad=el("linearGradient",{id:"sg",x1:"0",y1:"0",x2:"0",y2:"1"});
+  grad.appendChild(el("stop",{offset:"0%","stop-color":"#14223F","stop-opacity":".16"}));
+  grad.appendChild(el("stop",{offset:"100%","stop-color":"#14223F","stop-opacity":"0"}));
+  var defs=el("defs",{}); defs.appendChild(grad); svg.appendChild(defs);
+  svg.appendChild(el("path",{d:dArea,fill:"url(#sg)"}));
+  svg.appendChild(el("path",{d:dLine,fill:"none",stroke:"var(--c-line)","stroke-width":"2","stroke-linejoin":"round","stroke-linecap":"round"}));
+
+  [0,7,14,21,29].forEach(function(i){
+    var t=el("text",{x:X(i),y:P.t+ih+16,class:"axis-lab","text-anchor":"middle"});
+    t.textContent="8/"+(i+1); svg.appendChild(t);
+  });
+
+  var cross=el("line",{x1:0,y1:P.t,x2:0,y2:P.t+ih,stroke:"#14223F","stroke-width":"1","stroke-dasharray":"3 3",opacity:"0"});
+  var dot=el("circle",{r:4.5,fill:"#14223F",stroke:"#fff","stroke-width":"2",opacity:"0"});
+  svg.appendChild(cross); svg.appendChild(dot);
+
+  var hit=el("rect",{x:P.l,y:P.t,width:iw,height:ih,fill:"transparent",class:"dot-hit"});
+  svg.appendChild(hit);
+  hit.addEventListener("mousemove",function(ev){
+    var box=svg.getBoundingClientRect();
+    var sx=(ev.clientX-box.left)*(W/box.width);
+    var idx=Math.round((sx-P.l)/(iw/(SPEND.length-1)));
+    if(idx<0)idx=0; if(idx>SPEND.length-1)idx=SPEND.length-1;
+    cross.setAttribute("x1",X(idx)); cross.setAttribute("x2",X(idx)); cross.setAttribute("opacity","1");
+    dot.setAttribute("cx",X(idx)); dot.setAttribute("cy",Y(SPEND[idx])); dot.setAttribute("opacity","1");
+    showTip("<b>8月"+(idx+1)+"日</b><br><span class='k'>廣告花費</span> $"+SPEND[idx].toLocaleString(),ev.clientX,ev.clientY);
+  });
+  hit.addEventListener("mouseleave",function(){cross.setAttribute("opacity","0");dot.setAttribute("opacity","0");hideTip();});
+  host.appendChild(svg);
+}
+
+/* ---------------- MODULE 2 · funnel stacked bars ---------------- */
+var SERIES=[
+  {key:"confirmed",label:"確認出席 Confirmed",color:"#1A7F5A"},
+  {key:"noreply",  label:"未回覆 No-reply",   color:"#7A6BB0"},
+  {key:"rejected", label:"拒絕出席 Rejected", color:"#C13530"}
+];
+var SHOPS=[
+  {name:"投資入門班",  date:"8月5日",  confirmed:86, noreply:28, rejected:14},
+  {name:"股票估值工作坊",date:"8月9日", confirmed:61, noreply:22, rejected:13},
+  {name:"青少年理財營",  date:"8月14日",confirmed:112,noreply:27, rejected:15},
+  {name:"期權策略講座",  date:"8月20日",confirmed:44, noreply:19, rejected:11},
+  {name:"DoRichPreneur Club",date:"8月27日",confirmed:79,noreply:21,rejected:12}
+];
+function drawFunnel(){
+  var host=document.getElementById("funnel-chart"); if(!host) return;
+  host.innerHTML="";
+  var narrow=window.innerWidth<620;
+  var W=host.clientWidth||900, H=narrow?250:230, P={t:20,r:12,b:narrow?46:38,l:40};
+  var iw=W-P.l-P.r, ih=H-P.t-P.b;
+  var max=0;
+  SHOPS.forEach(function(s){var t=s.confirmed+s.noreply+s.rejected; if(t>max)max=t;});
+  max=Math.ceil(max/40)*40;
+  var svg=el("svg",{class:"chart",viewBox:"0 0 "+W+" "+H,height:H,role:"img","aria-label":"各場次報名跟進結果堆疊柱狀圖（示範數據）"});
+
+  for(var g=0; g<=4; g++){
+    var gy=P.t+ih-(ih*g/4);
+    svg.appendChild(el("line",{x1:P.l,y1:gy,x2:P.l+iw,y2:gy,class:"gridline"}));
+    var t=el("text",{x:P.l-8,y:gy+3.5,class:"axis-lab","text-anchor":"end"});
+    t.textContent=String(Math.round(max*g/4)); svg.appendChild(t);
+  }
+
+  var slot=iw/SHOPS.length, bw=Math.min(narrow?34:64, slot*0.56);
+  SHOPS.forEach(function(s,si){
+    var cx=P.l+slot*si+slot/2, total=s.confirmed+s.noreply+s.rejected;
+    var acc=0;
+    SERIES.forEach(function(se){
+      var v=s[se.key];
+      var hpx=(ih*v/max);
+      var y=P.t+ih-(ih*(acc+v)/max);
+      var segH=Math.max(hpx-2,1); /* 2px surface gap between stacked segments */
+      var rect=el("rect",{x:cx-bw/2,y:y,width:bw,height:segH,fill:se.color,rx:"3",class:"dot-hit"});
+      rect.addEventListener("mouseenter",function(ev){
+        showTip("<b>"+s.name+"</b><br><span class='k'>"+se.label+"</span> "+v+" 人 ("+Math.round(v/total*100)+"%)",ev.clientX,ev.clientY);
+      });
+      rect.addEventListener("mousemove",function(ev){
+        showTip("<b>"+s.name+"</b><br><span class='k'>"+se.label+"</span> "+v+" 人 ("+Math.round(v/total*100)+"%)",ev.clientX,ev.clientY);
+      });
+      rect.addEventListener("mouseleave",hideTip);
+      svg.appendChild(rect);
+      /* direct label — secondary encoding, required because green/red ΔE is in the CVD floor band */
+      if(segH>15){
+        var lb=el("text",{x:cx,y:y+segH/2+4,"text-anchor":"middle",fill:"#fff","font-size":"11","font-weight":"700"});
+        lb.textContent=String(v); svg.appendChild(lb);
+      }
+      acc+=v;
+    });
+    var tot=el("text",{x:cx,y:P.t+ih-(ih*total/max)-7,"text-anchor":"middle",fill:"#14223F","font-size":"11.5","font-weight":"700"});
+    tot.textContent=String(total); svg.appendChild(tot);
+
+    var nm=el("text",{x:cx,y:P.t+ih+15,"text-anchor":"middle",class:"axis-lab","font-weight":"600",fill:"#4A4F5A"});
+    nm.textContent = narrow ? (s.name.length>5?s.name.slice(0,5)+"…":s.name) : s.name;
+    svg.appendChild(nm);
+    var dt=el("text",{x:cx,y:P.t+ih+28,"text-anchor":"middle",class:"axis-lab"});
+    dt.textContent=s.date; svg.appendChild(dt);
+  });
+  host.appendChild(svg);
+
+  var lg=document.getElementById("funnel-legend");
+  if(lg && !lg.childNodes.length){
+    SERIES.forEach(function(se){
+      var d=document.createElement("span"); d.className="li";
+      var sw=document.createElement("span"); sw.className="swatch"; sw.style.background=se.color;
+      d.appendChild(sw); d.appendChild(document.createTextNode(se.label));
+      lg.appendChild(d);
+    });
+  }
+}
+
+/* ---------------- MODULE 3 · calendar ---------------- */
+function drawCal(){
+  var host=document.getElementById("cal"); if(!host) return;
+  host.innerHTML="";
+  ["一","二","三","四","五","六","日"].forEach(function(d){
+    var e=document.createElement("div"); e.className="dow"; e.textContent=d; host.appendChild(e);
+  });
+  /* August 2026 — 1 Aug is a Saturday; grid starts Monday */
+  var lead=5, days=31, events={5:1,9:1,14:1,20:1,27:1}, today=3;
+  for(var i=0;i<lead;i++){
+    var p=document.createElement("div"); p.className="d pad"; p.textContent=String(27+i); host.appendChild(p);
+  }
+  for(var d=1; d<=days; d++){
+    var c=document.createElement("div");
+    c.className="d"+(events[d]?" ev":"")+(d===today?" today":"");
+    c.textContent=String(d);
+    if(events[d]){
+      var found=null;
+      for(var k=0;k<SHOPS.length;k++){ if(SHOPS[k].date==="8月"+d+"日") found=SHOPS[k]; }
+      if(found){
+        c.style.cursor="pointer";
+        (function(f){
+          c.addEventListener("mouseenter",function(ev){showTip("<b>"+f.name+"</b><br><span class='k'>報名</span> "+(f.confirmed+f.noreply+f.rejected)+" 人",ev.clientX,ev.clientY);});
+          c.addEventListener("mousemove",function(ev){showTip("<b>"+f.name+"</b><br><span class='k'>報名</span> "+(f.confirmed+f.noreply+f.rejected)+" 人",ev.clientX,ev.clientY);});
+          c.addEventListener("mouseleave",hideTip);
+        })(found);
+      }
+    }
+    host.appendChild(c);
+  }
+}
+
+/* ---------------- MODULE 5 · market tiles ---------------- */
+var MK=[
+  {n:"黃金 XAU/USD", v:"2,381.60", c:"+0.68%", up:true,  s:[10,12,11,14,13,16,15,18,17,19]},
+  {n:"納斯達克",     v:"16,832.62",c:"+1.10%", up:true,  s:[14,13,15,14,16,15,17,16,18,19]},
+  {n:"恒生指數",     v:"18,687.82",c:"-0.34%", up:false, s:[18,17,18,16,17,15,16,14,15,14]},
+  {n:"標普 500",     v:"5,304.72", c:"+0.08%", up:true,  s:[15,15,16,15,16,16,17,16,17,17]}
+];
+function drawMk(){
+  var host=document.getElementById("mk"); if(!host) return;
+  host.innerHTML="";
+  MK.forEach(function(m){
+    var d=document.createElement("div"); d.className="mk-t";
+    d.innerHTML='<div class="n">'+m.n+'</div><div class="v">'+m.v+'</div><div class="c '+(m.up?"pos":"neg")+'">'+m.c+'</div>';
+    var w=100,h=26,mx=Math.max.apply(null,m.s),mn=Math.min.apply(null,m.s),rg=(mx-mn)||1;
+    var dd="";
+    m.s.forEach(function(v,i){ dd+=(i?" L":"M")+(i*(w/(m.s.length-1)))+","+(h-((v-mn)/rg)*(h-4)-2); });
+    var svg=el("svg",{viewBox:"0 0 "+w+" "+h,width:"100%",height:h,preserveAspectRatio:"none","aria-hidden":"true"});
+    svg.appendChild(el("path",{d:dd,fill:"none",stroke:m.up?"#1A7F5A":"#C13530","stroke-width":"2","stroke-linejoin":"round","stroke-linecap":"round","vector-effect":"non-scaling-stroke"}));
+    d.appendChild(svg); host.appendChild(d);
+  });
+}
+
+/* ---------------- Payment tabs ---------------- */
+Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
+  b.addEventListener("click",function(){
+    Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(o){o.setAttribute("aria-selected","false");});
+    b.setAttribute("aria-selected","true");
+    document.getElementById("pane-ext").hidden = (b.dataset.pane!=="ext");
+    document.getElementById("pane-int").hidden = (b.dataset.pane!=="int");
+  });
+});
+
+function drawAll(){ drawSpend(); drawFunnel(); drawCal(); drawMk(); }
+drawAll();
+var rt; window.addEventListener("resize",function(){clearTimeout(rt); rt=setTimeout(drawAll,140);});
+})();
+</script>
+</body>
+</html>
