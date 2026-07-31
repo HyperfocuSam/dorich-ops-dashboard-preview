@@ -555,6 +555,115 @@ Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
 
 function all(){drawSpend();drawFunnel();drawCal();drawMk();}
 all();
+
+/* ===================================================================
+   LIVE DATA
+   -------------------------------------------------------------------
+   The dashboard ships with sample data and stays on it until the four
+   URLs below are filled in. Each must be a Google Sheet tab published
+   as CSV (File > Share > Publish to web > pick the tab > CSV).
+
+   ⚠️ ONLY publish tabs that contain NO personal data. The aggregate
+   tabs below are safe. Never publish "01 報名主表" — it holds
+   registrant names and phone numbers.
+
+   If a fetch fails the page keeps the sample data and keeps saying so,
+   which is the safe failure: a stale dashboard that admits it beats a
+   confident one that is wrong.
+   =================================================================== */
+var SOURCES = {
+  summary:  "",   // 04 場次摘要 Summary   → funnel
+  adspend:  "",   // 05 廣告花費 AdSpend    → spend line
+  payments: "",   // 07 付款 Payments       → payment tables
+  quotes:   ""    // 10 市場報價 Quotes     → market tiles
+};
+
+function parseCSV(t){
+  var rows=[], row=[], f="", q=false;
+  for(var i=0;i<t.length;i++){
+    var c=t[i];
+    if(q){
+      if(c==='"'&&t[i+1]==='"'){f+='"';i++;}
+      else if(c==='"'){q=false;}
+      else f+=c;
+    } else if(c==='"'){q=true;}
+    else if(c===','){row.push(f);f="";}
+    else if(c==='\n'){row.push(f);f="";rows.push(row);row=[];}
+    else if(c!=='\r'){f+=c;}
+  }
+  if(f!==""||row.length){row.push(f);rows.push(row);}
+  return rows.filter(function(r){return r.some(function(x){return String(x).trim()!=="";});});
+}
+function num(v){var n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isFinite(n)?n:0;}
+
+function setLive(ok, stamp){
+  var f=document.querySelector(".flag div"), m=document.querySelectorAll(".meta .v");
+  if(ok){
+    if(f){
+      f.style.background="rgba(20,165,184,.09)";
+      f.style.borderColor="rgba(20,165,184,.28)";
+      f.style.color="#BFE6EC";
+      f.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5FD3E2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M20 6 9 17l-5-5"/></svg>'
+        +'<span><b style="color:#5FD3E2">實時數據</b> — 由 Google Sheets 中央數據層讀取，最後更新 '+stamp+'。個人資料（姓名／電話）不會傳到此頁，只傳匯總數字。</span>';
+    }
+    if(m[2]) m[2].innerHTML='<span style="color:#5FD3E2">實時 Live</span>';
+  }
+}
+
+function loadLive(){
+  /* Each job RESOLVES WITH A COMMIT FUNCTION rather than mutating as it goes.
+     Nothing is applied unless every source succeeded — otherwise a partial
+     failure leaves half-live arrays that only surface on the next redraw. */
+  var jobs=[];
+  function get(url){ return fetch(url,{cache:"no-store"}).then(function(r){
+    if(!r.ok) throw new Error(url+" -> "+r.status); return r.text(); }).then(parseCSV); }
+
+  if(SOURCES.summary) jobs.push(get(SOURCES.summary).then(function(rows){
+    /* expects: code | name | date | registered | confirmed | rejected | noreply | rate */
+    var out=[];
+    rows.slice(1).forEach(function(r){
+      if(!r[0]) return;
+      out.push({n:r[1]||r[0], date:r[2]||"",
+                confirmed:num(r[4]), noreply:num(r[6]), rejected:num(r[5])});
+    });
+    if(!out.length) throw new Error("summary: no rows");
+    return function(){ SHOP.length=0; out.forEach(function(o){SHOP.push(o);}); };
+  }));
+
+  if(SOURCES.adspend) jobs.push(get(SOURCES.adspend).then(function(rows){
+    var v=rows.slice(1).map(function(r){return num(r[2]);}).filter(function(x){return x>0;});
+    if(!v.length) throw new Error("adspend: no rows");
+    return function(){ SPEND.length=0; v.slice(-30).forEach(function(x){SPEND.push(x);}); };
+  }));
+
+  if(SOURCES.quotes) jobs.push(get(SOURCES.quotes).then(function(rows){
+    var out=[];
+    rows.slice(1).forEach(function(r){
+      if(!r[0]) return;
+      var pct=num(r[4]);
+      out.push({n:r[1]||r[0], v:r[2], c:(pct>=0?"+":"")+(pct*100).toFixed(2)+"%",
+                up:pct>=0?1:0, s:[15,15,16,15,16,16,17,16,17,17]});
+    });
+    if(!out.length) throw new Error("quotes: no rows");
+    return function(){ MK.length=0; out.forEach(function(o){MK.push(o);}); };
+  }));
+
+  if(!jobs.length) return;   /* not configured — stay on sample data, banner unchanged */
+
+  Promise.all(jobs).then(function(commits){
+    commits.forEach(function(fn){ fn(); });   /* all-or-nothing */
+    all();
+    var d=new Date(), u=d.getTime()+d.getTimezoneOffset()*6e4, hk=new Date(u+288e5);
+    var p=function(n){return n<10?"0"+n:""+n;};
+    setLive(true, p(hk.getHours())+":"+p(hk.getMinutes())+" HKT");
+  }).catch(function(e){
+    /* deliberately silent on the page — sample data and its warning both stay */
+    if(window.console) console.warn("[dashboard] live data unavailable, staying on sample:", e && e.message);
+  });
+}
+loadLive();
+setInterval(loadLive, 15*60*1000);
+
 var rt; addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(all,150);});
 })();
 </script>
