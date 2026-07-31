@@ -4,427 +4,375 @@
 <meta charset="utf-8">
 <meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DoRich Operations Command — 原型 Prototype</title>
+<title>DoRich Operations Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="brand/dorich-brand.css">
 <style>
-:root{ --dr-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+:root{
+  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans:"Poppins","Noto Sans TC","PingFang HK",ui-sans-serif,system-ui,sans-serif;
+  --tc:"Noto Sans TC","PingFang HK",sans-serif;
+
+  --bg:#080E1A;
+  --panel:rgba(16,27,47,.50);
+  --panel-2:rgba(255,255,255,.035);
+  --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.055);
+
+  --tx:#EDEFF4;
+  --tx2:#9BA7BC;
+  --tx3:#6B788F;
+
+  --acc:#FF7300;
+  --confirmed:#14A5B8;
+  --noreply:#7A68D8;
+  --rejected:#D33B4C;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:
-    radial-gradient(1100px 700px at 88% -8%, rgba(255,115,0,.15), transparent 60%),
-    radial-gradient(900px 640px at -6% 24%, rgba(20,165,184,.10), transparent 58%),
-    radial-gradient(900px 700px at 52% 116%, rgba(244,170,41,.10), transparent 60%),
-    var(--dr-deep);
-  background-attachment:fixed;
-  color:var(--dr-txt);
-  font-family:var(--dr-sans); font-size:14px; line-height:1.5;
+  background:var(--bg); color:var(--tx);
+  font-family:var(--sans); font-size:14px; line-height:1.55;
   -webkit-font-smoothing:antialiased; min-height:100vh;
 }
-h1,h2,h3{margin:0; font-weight:700; letter-spacing:-.01em}
+#bg3d{position:fixed; inset:0; width:100%; height:100%; z-index:0; display:block; pointer-events:none}
+/* a soft vignette keeps the 3D from competing with data at the edges */
+.veil{position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:radial-gradient(1300px 900px at 50% 38%, transparent, rgba(8,14,26,.42) 88%)}
 .z{position:relative; z-index:1}
 
-/* ---------- Status rail ---------- */
-.rail{
-  max-width:1440px; margin:14px auto 0; padding:0 18px;
-  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-  border-radius:12px; min-height:60px;
-  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)), rgba(10,18,32,.72);
-  -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
-  border:1px solid var(--dr-hud-line2);
-  box-shadow:0 14px 40px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08);
-}
-.rail-brand{display:flex; align-items:center; gap:11px; padding:11px 0}
-.rail-brand svg{height:32px; width:auto; display:block; flex:none;
-  filter:drop-shadow(0 0 9px rgba(255,115,0,.5))}
-.rail-brand .t strong{
-  display:block; font-family:var(--dr-mono); font-size:14px; font-weight:700;
-  letter-spacing:.13em; text-transform:uppercase; color:var(--dr-txt);
-}
-.rail-brand .t span{
-  display:block; font-size:10.5px; color:var(--dr-txt-3); font-weight:500;
-  letter-spacing:.05em; margin-top:2px;
-}
-.rail-sp{flex:1 1 auto; min-width:8px}
-.stat{display:inline-flex; align-items:center; gap:7px; font-family:var(--dr-mono);
-  font-size:11px; letter-spacing:.08em; color:var(--dr-txt-2); white-space:nowrap}
-.stat b{color:var(--dr-txt); font-weight:700}
-.led{width:7px; height:7px; border-radius:50%; background:#2FD8A8; flex:none;
-  box-shadow:0 0 0 0 rgba(47,216,168,.55); animation:pulse 2.4s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,216,168,.5)}70%{box-shadow:0 0 0 8px rgba(47,216,168,0)}100%{box-shadow:0 0 0 0 rgba(47,216,168,0)}}
-.divider{width:1px; height:22px; background:var(--dr-hud-line2)}
+h1,h2,h3{margin:0; font-weight:600; letter-spacing:-.012em}
 
-/* ---------- Sample-data notice ---------- */
-.notice{
-  max-width:1440px; margin:12px auto 0; padding:11px 18px; border-radius:10px;
-  font-size:12.5px; color:#FFD9B0; display:flex; gap:11px; align-items:flex-start;
-  background:rgba(255,115,0,.10); border:1px solid rgba(255,115,0,.30);
+/* ---------- Panels: frosted glass floating over the hologram ---------- */
+.card{
+  background:var(--panel);
+  -webkit-backdrop-filter:blur(13px) saturate(1.2); backdrop-filter:blur(13px) saturate(1.2);
+  border:1px solid var(--line); border-radius:16px;
+  box-shadow:0 24px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.07);
+  padding:22px 24px;
 }
-.notice svg{flex:none; margin-top:1px}
-.notice b{color:#FFC98A; font-weight:700}
+@supports not (backdrop-filter:blur(1px)){.card{background:rgba(17,28,48,.96)}}
 
-/* ---------- Grid ---------- */
-.wrap{max-width:1600px; margin:0 auto; padding:14px 18px 40px}
-.grid{display:grid; gap:13px; align-items:start; margin-bottom:13px}
-.grid-hero{grid-template-columns:1fr}
-.grid-3{grid-template-columns:1.05fr 1.15fr .95fr}
-.pan{padding:15px 16px; min-width:0}
+/* ---------- Header ---------- */
+.top{max-width:1500px; margin:0 auto; padding:26px 24px 6px;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:13px}
+.brand svg{height:34px; width:auto; display:block; flex:none}
+.brand .t h1{font-size:19px; font-weight:600; letter-spacing:-.015em}
+.brand .t p{margin:1px 0 0; font-size:12px; color:var(--tx3); font-family:var(--tc)}
+.top .sp{flex:1 1 auto}
+.meta{display:flex; align-items:center; gap:22px; flex-wrap:wrap}
+.meta div{line-height:1.25}
+.meta .k{font-size:10px; color:var(--tx3); letter-spacing:.06em; text-transform:uppercase; font-weight:500}
+.meta .v{font-family:var(--mono); font-size:13px; color:var(--tx); font-weight:500;
+  font-variant-numeric:tabular-nums; margin-top:2px}
 
-.dr-hud{--bk:15px}
-.dr-hud::before,.dr-hud::after{width:var(--bk); height:var(--bk)}
-.bk{position:absolute; width:15px; height:15px; pointer-events:none;
-  border-color:var(--dr-hud-line); border-style:solid; border-width:0}
-.bk.tr{top:-1px; right:-1px; border-top-width:2px; border-right-width:2px; border-top-right-radius:12px}
-.bk.bl{bottom:-1px; left:-1px; border-bottom-width:2px; border-left-width:2px; border-bottom-left-radius:12px}
-
-.hd{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:2px}
-.mod{margin-left:auto; font-family:var(--dr-mono); font-size:9.5px; font-weight:700;
-  letter-spacing:.12em; color:var(--dr-txt-3); white-space:nowrap}
-.pill-live{
-  display:inline-flex; align-items:center; gap:6px; border-radius:var(--dr-pill);
-  padding:5px 12px; font-family:var(--dr-mono); font-size:10px; font-weight:700;
-  letter-spacing:.09em; color:#FFC98A; background:rgba(255,115,0,.12);
-  border:1px solid rgba(255,115,0,.36); white-space:nowrap;
+.flag{
+  max-width:1500px; margin:14px auto 0; padding:0 24px;
 }
-.tq{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:7px}
-.tq li{display:flex; gap:9px; align-items:center; padding:8px 9px; border-radius:7px;
-  background:rgba(255,255,255,.032); border:1px solid var(--dr-hud-line2); font-size:12px}
-.tq li.crit{background:rgba(211,59,76,.09); border-color:rgba(211,59,76,.3)}
-.tq li.warn{background:rgba(201,138,30,.08); border-color:rgba(201,138,30,.28)}
-.tq .ic{flex:none; opacity:.9}
-.tq .tx{flex:1; min-width:0}
-.tq .tx .n{display:block; color:var(--dr-txt); font-weight:500;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.tq li.ok .tx .n{color:var(--dr-txt-3); text-decoration:line-through}
-.tq .tx .o{display:block; font-family:var(--dr-mono); font-size:9.5px; color:var(--dr-txt-3);
-  letter-spacing:.09em; text-transform:uppercase; margin-top:2px}
-.ref{font-family:var(--dr-mono); font-size:10.5px; color:var(--dr-txt-3); letter-spacing:.04em}
-.rgn{background:rgba(255,255,255,.07); color:var(--dr-txt-2); border-radius:3px;
-  padding:1px 5px; font-weight:700; font-size:9.5px; letter-spacing:.06em}
-.sysline{
-  max-width:1600px; margin:12px auto 0; padding:0 18px; display:flex; gap:14px;
-  justify-content:space-between; flex-wrap:wrap;
-  font-family:var(--dr-mono); font-size:9.5px; letter-spacing:.14em;
-  text-transform:uppercase; color:#3F4C63;
+.flag div{
+  display:flex; gap:11px; align-items:flex-start; padding:12px 16px; border-radius:12px;
+  font-size:12.5px; color:#F3D9BC; line-height:1.55;
+  background:rgba(255,115,0,.075); border:1px solid rgba(255,115,0,.22);
 }
-.idx{
-  font-family:var(--dr-mono); font-size:10px; font-weight:700; color:var(--dr-orange);
-  border:1px solid var(--dr-hud-line); border-radius:5px; padding:2px 6px; flex:none;
-  background:rgba(255,115,0,.09);
-}
-.hd h2{font-family:var(--dr-mono); font-size:12.5px; font-weight:700;
-  letter-spacing:.11em; text-transform:uppercase; color:var(--dr-txt)}
-.hd .tc{font-size:12px; color:var(--dr-txt-2); font-family:var(--dr-tc)}
-.sub{font-size:11.5px; color:var(--dr-txt-3); margin:3px 0 13px}
+.flag b{color:#FFC48A; font-weight:600}
+.flag svg{flex:none; margin-top:2px}
 
-/* ---------- Stat tiles ---------- */
-.tiles{display:flex; gap:9px; flex-wrap:wrap; margin-bottom:14px}
-.grid-3 .tiles{display:grid; grid-template-columns:1fr 1fr; gap:9px}
-.tl{flex:1 1 118px; min-width:110px; padding:10px 11px; border-radius:8px;
-  background:rgba(255,255,255,.035); border:1px solid var(--dr-hud-line2)}
-.tl .k{font-family:var(--dr-mono); font-size:9.5px; font-weight:700; letter-spacing:.1em;
-  text-transform:uppercase; color:var(--dr-txt-3); margin-bottom:5px}
-.tl .v{font-family:var(--dr-mono); font-size:20px; font-weight:700; color:var(--dr-txt);
-  line-height:1.1; font-variant-numeric:tabular-nums}
-.tl .d{font-size:10.5px; font-weight:600; margin-top:3px; font-family:var(--dr-mono)}
-.up{color:#F0838F} .dn{color:#5FD3E2} .fl{color:var(--dr-txt-3)}
-.tl.hero{background:rgba(255,115,0,.09); border-color:var(--dr-hud-line)}
-.tl.hero .v{color:#FFB870; text-shadow:0 0 18px rgba(255,115,0,.45)}
+/* ---------- Layout ---------- */
+.wrap{max-width:1500px; margin:0 auto; padding:16px 24px 46px}
+.row{display:grid; gap:16px; align-items:start; margin-bottom:16px}
+.row-1{grid-template-columns:1fr}
+.row-3{grid-template-columns:1.02fr 1.16fr .92fr}
+
+.hd{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:3px}
+.hd h2{font-size:16px; font-weight:600}
+.hd .tc{font-size:12.5px; color:var(--tx3); font-family:var(--tc)}
+.sub{font-size:12px; color:var(--tx3); margin:0 0 18px; font-family:var(--tc)}
+
+/* ---------- Figures ---------- */
+.tiles{display:grid; gap:12px; grid-template-columns:repeat(4,1fr); margin-bottom:20px}
+.row-3 .tiles{grid-template-columns:1fr 1fr}
+.tile{padding:14px 15px; border-radius:11px; background:var(--panel-2); border:1px solid var(--line-2)}
+.tile .k{font-size:10.5px; color:var(--tx3); font-weight:500; letter-spacing:.045em;
+  text-transform:uppercase; margin-bottom:7px}
+.tile .v{font-family:var(--mono); font-size:25px; font-weight:500; line-height:1.05;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.tile .d{font-size:11px; margin-top:5px; color:var(--tx3)}
+.tile.lead .v{color:#FFB870}
+.up{color:#EE8A94} .dn{color:#5FD3E2}
 
 /* ---------- Meter ---------- */
-.mrow{display:flex; justify-content:space-between; align-items:baseline; font-size:11px; margin-bottom:7px}
-.mrow .l{color:var(--dr-txt-2); font-family:var(--dr-mono); letter-spacing:.06em;
-  text-transform:uppercase; font-size:10px; font-weight:700}
-.mrow .r{color:var(--dr-txt); font-family:var(--dr-mono); font-weight:700; font-variant-numeric:tabular-nums}
-.meter{position:relative; height:20px; border-radius:5px; background:rgba(255,255,255,.055);
-  border:1px solid var(--dr-hud-line2); overflow:visible}
-.mfill{height:100%; border-radius:4px;
-  background:linear-gradient(90deg, rgba(255,115,0,.65), var(--dr-orange));
-  box-shadow:0 0 16px rgba(255,115,0,.5)}
-.mthr{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--dr-crit);
-  box-shadow:0 0 8px rgba(211,59,76,.75)}
-.mcap{display:flex; justify-content:space-between; gap:12px; font-size:10.5px;
-  color:var(--dr-txt-3); margin-top:8px; font-family:var(--dr-mono)}
-.thrk{display:inline-flex; align-items:center; gap:5px; color:#F0838F; font-weight:700; white-space:nowrap}
-.thrk i{width:2px; height:11px; background:var(--dr-crit); display:inline-block; flex:none}
+.mrow{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px}
+.mrow .l{font-size:11px; color:var(--tx3); letter-spacing:.045em; text-transform:uppercase; font-weight:500}
+.mrow .r{font-family:var(--mono); font-size:13px; font-variant-numeric:tabular-nums; color:var(--tx)}
+.meter{position:relative; height:8px; border-radius:99px; background:rgba(255,255,255,.08)}
+.mfill{height:100%; border-radius:99px; background:linear-gradient(90deg,#C25A08,var(--acc))}
+.mthr{position:absolute; top:-5px; bottom:-5px; width:2px; background:var(--rejected); border-radius:2px}
+.mcap{display:flex; justify-content:space-between; gap:14px; font-size:11px; color:var(--tx3); margin-top:10px}
+.mcap .a{color:#EE8A94}
 
 /* ---------- Charts ---------- */
 .chart{width:100%; display:block; overflow:visible}
-.gl{stroke:rgba(255,255,255,.07); stroke-width:1}
-.ax{font-family:var(--dr-mono); font-size:9.5px; fill:#6E7C93}
+.gl{stroke:rgba(255,255,255,.06); stroke-width:1}
+.ax{font-family:var(--mono); font-size:10px; fill:#6B788F}
 .hit{cursor:crosshair}
-.legend{display:flex; gap:14px; flex-wrap:wrap; margin:11px 0 2px; font-size:11.5px}
-.legend .li{display:inline-flex; align-items:center; gap:6px; color:var(--dr-txt-2); font-weight:500}
-.sw{width:10px; height:10px; border-radius:2px; flex:none}
+.legend{display:flex; gap:18px; flex-wrap:wrap; margin:14px 0 0; font-size:12px}
+.legend .li{display:inline-flex; align-items:center; gap:7px; color:var(--tx2)}
+.sw{width:9px; height:9px; border-radius:2px; flex:none}
+.note{font-size:11px; color:var(--tx3); margin:10px 0 0; font-family:var(--tc); line-height:1.6}
 
-#tip{
-  position:fixed; pointer-events:none; opacity:0; transition:opacity .12s; z-index:99;
-  background:rgba(8,14,26,.97); color:var(--dr-txt); border:1px solid var(--dr-hud-line);
-  border-radius:7px; padding:8px 11px; font-size:11.5px; line-height:1.5;
-  box-shadow:0 10px 30px rgba(0,0,0,.6); max-width:230px; font-family:var(--dr-mono);
-}
-#tip b{color:#FFB870}
-#tip .k{color:var(--dr-txt-3)}
+#tip{position:fixed; pointer-events:none; opacity:0; transition:opacity .12s; z-index:99;
+  background:rgba(12,20,36,.97); color:var(--tx); border:1px solid var(--line);
+  border-radius:9px; padding:9px 12px; font-size:12px; line-height:1.5;
+  box-shadow:0 14px 36px rgba(0,0,0,.6); max-width:240px;
+  -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px)}
+#tip b{color:#FFB870; font-weight:600}
+#tip .k{color:var(--tx3)}
 
 /* ---------- Calendar ---------- */
-.cal{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; font-size:10.5px}
-.cal .dw{text-align:center; font-family:var(--dr-mono); font-weight:700; color:var(--dr-txt-3);
-  padding:3px 0; font-size:9.5px}
-.cal .d{aspect-ratio:1/.76; border-radius:6px; display:flex; align-items:center; justify-content:center;
-  color:var(--dr-txt-2); position:relative; font-family:var(--dr-mono); font-variant-numeric:tabular-nums}
-.cal .d.pad{color:#3C475C}
-.cal .d.ev{background:rgba(255,115,0,.15); color:#FFB870; font-weight:700;
-  box-shadow:inset 0 0 0 1px rgba(255,115,0,.32)}
-.cal .d.ev::after{content:""; position:absolute; left:50%; bottom:15%; transform:translateX(-50%);
-  width:3px; height:3px; border-radius:50%; background:var(--dr-orange);
-  box-shadow:0 0 6px var(--dr-orange)}
-.cal .d.now{box-shadow:inset 0 0 0 1.5px #5FD3E2; color:#5FD3E2; font-weight:700}
+.cal{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; font-size:11.5px}
+.cal .dw{text-align:center; font-size:10px; color:var(--tx3); padding:2px 0 6px; font-weight:500}
+.cal .d{aspect-ratio:1/.8; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  color:var(--tx2); position:relative; font-family:var(--mono); font-variant-numeric:tabular-nums}
+.cal .d.pad{color:#3A465C}
+.cal .d.ev{background:rgba(255,115,0,.14); color:#FFB870}
+.cal .d.ev::after{content:""; position:absolute; left:50%; bottom:14%; transform:translateX(-50%);
+  width:3px; height:3px; border-radius:50%; background:var(--acc)}
+.cal .d.now{box-shadow:inset 0 0 0 1.5px rgba(95,211,226,.75); color:#5FD3E2}
 
-/* ---------- Tasks ---------- */
+/* ---------- Task list ---------- */
 .tk{list-style:none; margin:0; padding:0}
-.tk li{display:flex; gap:9px; align-items:flex-start; padding:7px 0;
-  border-bottom:1px solid rgba(255,255,255,.05); font-size:12px}
+.tk li{display:flex; gap:12px; align-items:center; padding:11px 0; border-bottom:1px solid var(--line-2)}
 .tk li:last-child{border-bottom:0}
-.bx{width:14px; height:14px; border-radius:3px; border:1.5px solid #46536B; flex:none;
-  margin-top:2px; position:relative}
-.bx.on{background:var(--dr-good); border-color:var(--dr-good); box-shadow:0 0 9px rgba(20,165,184,.5)}
-.bx.on::after{content:""; position:absolute; left:3.5px; top:.5px; width:4px; height:8px;
-  border:solid #071018; border-width:0 2px 2px 0; transform:rotate(45deg)}
-.tt{flex:1; min-width:0}
-.tt .n{display:block; color:var(--dr-txt); font-weight:500}
-.tk li.ok .n{color:var(--dr-txt-3); text-decoration:line-through}
-.tt .m{display:block; font-size:10px; color:var(--dr-txt-3); margin-top:2px; font-family:var(--dr-mono)}
-.due{font-size:10px; font-weight:700; white-space:nowrap; font-family:var(--dr-mono); padding-top:2px}
-.due.o{color:#F0838F} .due.s{color:#E5B454} .due.n{color:var(--dr-txt-3)}
+.dot{width:7px; height:7px; border-radius:50%; flex:none}
+.dot.c{background:var(--rejected)} .dot.w{background:#C98A1E}
+.dot.n{background:#46536B} .dot.g{background:var(--confirmed)}
+.tk .tx{flex:1; min-width:0}
+.tk .tx .n{display:block; font-size:12.5px; color:var(--tx); font-family:var(--tc)}
+.tk li.done .tx .n{color:var(--tx3)}
+.tk .tx .o{display:block; font-size:10.5px; color:var(--tx3); margin-top:2px}
+.st{font-size:10.5px; font-weight:500; white-space:nowrap; font-family:var(--mono); color:var(--tx3)}
+.st.c{color:#EE8A94} .st.w{color:#E5B454} .st.g{color:#5FD3E2}
 
 /* ---------- Tables ---------- */
-.tabs{display:flex; gap:6px; margin-bottom:11px}
-.tb{border:1px solid var(--dr-hud-line2); background:rgba(255,255,255,.04); color:var(--dr-txt-2);
-  border-radius:var(--dr-pill); padding:5px 14px; font-family:var(--dr-mono); font-size:10.5px;
-  font-weight:700; letter-spacing:.06em; cursor:pointer; transition:all .15s}
-.tb[aria-selected="true"]{background:var(--dr-orange); color:#fff; border-color:var(--dr-orange);
-  box-shadow:0 0 16px rgba(255,115,0,.4)}
-table{width:100%; border-collapse:collapse; font-size:12px}
-th{text-align:left; font-family:var(--dr-mono); font-size:9.5px; font-weight:700; color:var(--dr-txt-3);
-  letter-spacing:.1em; text-transform:uppercase; padding:0 7px 7px; border-bottom:1px solid var(--dr-hud-line2)}
-td{padding:8px 7px; border-bottom:1px solid rgba(255,255,255,.045); vertical-align:middle; color:var(--dr-txt-2)}
+.tabs{display:flex; gap:2px; margin-bottom:16px; background:var(--panel-2);
+  padding:3px; border-radius:10px; width:fit-content; border:1px solid var(--line-2)}
+.tb{border:0; background:transparent; color:var(--tx3); border-radius:7px;
+  padding:6px 16px; font:inherit; font-size:12px; font-weight:500; cursor:pointer; transition:all .18s var(--ease)}
+.tb[aria-selected="true"]{background:rgba(255,255,255,.09); color:var(--tx)}
+table{width:100%; border-collapse:collapse; font-size:12.5px}
+th{text-align:left; font-size:10.5px; font-weight:500; color:var(--tx3); letter-spacing:.05em;
+  text-transform:uppercase; padding:0 9px 10px; border-bottom:1px solid var(--line-2)}
+td{padding:11px 9px; border-bottom:1px solid var(--line-2); color:var(--tx2); font-family:var(--tc)}
 tr:last-child td{border-bottom:0}
-td.nm{color:var(--dr-txt)}
-td.num{text-align:right; font-family:var(--dr-mono); font-variant-numeric:tabular-nums;
-  font-weight:700; color:var(--dr-txt)}
+td.nm{color:var(--tx)}
+td.num{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--tx)}
+.badge{display:inline-flex; align-items:center; gap:6px; font-size:11px; color:var(--tx2); font-family:var(--sans)}
+.badge i{width:6px; height:6px; border-radius:50%; flex:none}
 
 /* ---------- Markets ---------- */
-.mk{display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin-bottom:14px}
-.news{columns:2; column-gap:26px}
-.news li{break-inside:avoid}
-.mkt{border:1px solid var(--dr-hud-line2); border-radius:8px; padding:10px 11px;
-  background:rgba(255,255,255,.035); min-width:0}
-.mkt .n{font-family:var(--dr-mono); font-size:9.5px; font-weight:700; color:var(--dr-txt-3);
-  letter-spacing:.08em; text-transform:uppercase}
-.mkt .v{font-family:var(--dr-mono); font-size:17px; font-weight:700; color:var(--dr-txt);
-  margin-top:3px; font-variant-numeric:tabular-nums}
-.mkt .c{font-family:var(--dr-mono); font-size:11px; font-weight:700; margin-top:1px}
-.pos{color:#5FD3E2} .neg{color:#F0838F}
-.news{list-style:none; margin:0; padding:0}
-.news li{padding:8px 0; border-bottom:1px solid rgba(255,255,255,.05)}
-.news li:last-child{border-bottom:0}
-.news .h{font-size:12px; color:var(--dr-txt); line-height:1.5; font-family:var(--dr-tc)}
-.news .m{font-size:10px; color:var(--dr-txt-3); margin-top:3px; display:flex; gap:7px;
-  flex-wrap:wrap; font-family:var(--dr-mono)}
-.news .src{font-weight:700; color:var(--dr-txt-2)}
-.tag{background:rgba(255,115,0,.13); color:#FFB870; border-radius:3px; padding:1px 5px; font-weight:700}
+.mk{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px}
+.mkt{border:1px solid var(--line-2); border-radius:11px; padding:14px 15px; background:var(--panel-2)}
+.mkt .n{font-size:10.5px; color:var(--tx3); letter-spacing:.05em; text-transform:uppercase; font-weight:500}
+.mkt .v{font-family:var(--mono); font-size:21px; font-weight:500; margin-top:5px;
+  font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.mkt .c{font-family:var(--mono); font-size:12px; margin-top:2px}
+.pos{color:#5FD3E2} .neg{color:#EE8A94}
+.news{list-style:none; margin:0; padding:0; columns:2; column-gap:34px}
+.news li{padding:11px 0; border-bottom:1px solid var(--line-2); break-inside:avoid}
+.news .h{font-size:12.5px; color:var(--tx); line-height:1.6; font-family:var(--tc)}
+.news .m{font-size:10.5px; color:var(--tx3); margin-top:5px; display:flex; gap:9px; flex-wrap:wrap}
+.news .src{color:var(--tx2); font-weight:500}
+.news time{font-family:var(--mono)}
 
 /* ---------- Foot ---------- */
-.foot{margin-top:14px; padding:15px 17px; border-radius:10px; font-size:12px;
-  color:var(--dr-txt-2); line-height:1.65; border-left:3px solid var(--dr-orange)}
-.foot h3{font-family:var(--dr-mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--dr-txt); margin-bottom:7px}
-.foot ul{margin:7px 0 0; padding-left:17px}
-.foot li{margin-bottom:4px}
-.foot b{color:#FFB870}
+.foot{margin-top:4px; font-size:12.5px; color:var(--tx2); line-height:1.75}
+.foot h3{font-size:13px; color:var(--tx); margin-bottom:9px; font-weight:600}
+.foot ul{margin:9px 0 0; padding-left:19px}
+.foot li{margin-bottom:6px}
+.foot b{color:#FFB870; font-weight:500}
 
-@keyframes rise{from{opacity:0; transform:translateY(12px)}to{opacity:1; transform:none}}
-.an{animation:rise .5s cubic-bezier(.22,1,.36,1) both}
-.grid > .an:nth-child(1){animation-delay:.04s}
-.grid > .an:nth-child(2){animation-delay:.10s}
-.grid > .an:nth-child(3){animation-delay:.16s}
-.grid > .an:nth-child(4){animation-delay:.22s}
-.grid > .an:nth-child(5){animation-delay:.28s}
+@keyframes rise{from{opacity:0; transform:translateY(16px)}to{opacity:1; transform:none}}
+.an{animation:rise .6s var(--ease) both}
+.row:nth-of-type(1) .an{animation-delay:.05s}
+.row:nth-of-type(2) .an:nth-child(1){animation-delay:.11s}
+.row:nth-of-type(2) .an:nth-child(2){animation-delay:.17s}
+.row:nth-of-type(2) .an:nth-child(3){animation-delay:.23s}
+.row:nth-of-type(3) .an{animation-delay:.29s}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; animation-delay:0ms !important;
+    transition-duration:.01ms !important}
+}
 
 @media (max-width:1180px){
-  .grid-3{grid-template-columns:1fr}
+  .row-3{grid-template-columns:1fr}
+  .row-3 .tiles{grid-template-columns:repeat(4,1fr)}
   .news{columns:1}
 }
-@media (max-width:560px){
-  .wrap{padding:12px 11px 36px}
-  .rail,.notice{margin-left:11px; margin-right:11px}
-  .pan{padding:13px}
-  .tl .v{font-size:17px}
-  table{font-size:11px} td,th{padding-left:4px; padding-right:4px}
-  .mk{grid-template-columns:repeat(2,1fr)}
-  .news{columns:1}
+@media (max-width:640px){
+  .top,.flag{padding-left:14px; padding-right:14px}
+  .wrap{padding:12px 14px 34px}
+  .card{padding:17px 16px}
+  .tiles,.row-3 .tiles{grid-template-columns:1fr 1fr}
+  .mk{grid-template-columns:1fr 1fr}
+  .tile .v{font-size:21px}
+  table{font-size:11.5px} td,th{padding-left:5px; padding-right:5px}
+  .meta{gap:14px}
 }
 </style>
 </head>
 <body>
-<div class="dr-scan"></div>
+<canvas id="bg3d"></canvas>
+<div class="veil"></div>
 
-<header class="rail z">
-  <div class="rail-brand">
+<header class="top z">
+  <div class="brand">
     <svg viewBox="-1 -1 28.5 34.5" role="img" aria-label="DoRich">
       <g transform="translate(-1497 -4987.888)">
-        <path d="M1517.367 5015.449v-9.921a10.71 10.71 0 0 0-7.484-10.513l-4.744-1.444c-1.979-.6-4.184-1.276-5.785-1.768a2.2 2.2 0 0 1-1.551-1.363 1.975 1.975 0 0 1 .563-2.1c.076-.084-.3.2-.38.281a2.56 2.56 0 0 0-.986 1.98v32.147a.207.207 0 0 0 .13.2.2.2 0 0 0 .079.016.21.21 0 0 0 .152-.066l2.792-2.958a2.545 2.545 0 0 1 2.611-.692l7.972 2.427a4.951 4.951 0 0 0 4.5-.631 5.94 5.94 0 0 0 2.152-4.894v-.147c-.002-.19-.01-.372-.021-.554z" fill="#FF6700"/>
+        <path d="M1517.367 5015.449v-9.921a10.71 10.71 0 0 0-7.484-10.513l-4.744-1.444c-1.979-.6-4.184-1.276-5.785-1.768a2.2 2.2 0 0 1-1.551-1.363 1.975 1.975 0 0 1 .563-2.1c.076-.084-.3.2-.38.281a2.56 2.56 0 0 0-.986 1.98v32.147a.207.207 0 0 0 .13.2.2.2 0 0 0 .79.016.21.21 0 0 0 .152-.066l2.792-2.958a2.545 2.545 0 0 1 2.611-.692l7.972 2.427a4.951 4.951 0 0 0 4.5-.631 5.94 5.94 0 0 0 2.152-4.894v-.147c-.002-.19-.01-.372-.021-.554z" fill="#FF6700"/>
         <path d="M1517.776 5000.007c3.043.073 4.136-2.434 4.136-4.621l.046-.808c0-3.343-.376-6.169-4.269-6.69h-17.47a3.408 3.408 0 0 0-1.854.435v.006a1.992 1.992 0 0 0-.565 2.116 2.2 2.2 0 0 0 1.55 1.363c1.6.491 3.806 1.164 5.785 1.767l4.745 1.445a10.709 10.709 0 0 1 7.484 10.512v8.593l4.772 1.281a.739.739 0 0 0 .907-.7v-8.667c-.003-3.212-2.266-5.146-5.267-6.032z" fill="#EFEBE4"/>
       </g>
     </svg>
-    <span class="t">
-      <strong>Operations Command</strong>
-      <span>DoRich Group Limited · 營運指揮中心</span>
-    </span>
+    <div class="t">
+      <h1>Operations Dashboard</h1>
+      <p>DoRich Group Limited · 營運儀表板</p>
+    </div>
   </div>
-  <span class="rail-sp"></span>
-  <span class="stat"><span class="led"></span>SYSTEM <b>OPERATIONAL</b></span>
-  <span class="divider"></span>
-  <span class="pill-live">SAMPLE DATA — NOT LIVE</span>
-  <span class="divider"></span>
-  <span class="stat">CYCLE <b>2026-08</b></span>
-  <span class="divider"></span>
-  <span class="stat">HKT <b id="clock">--:--:--</b></span>
-  <span class="divider"></span>
-  <a class="stat" href="light.html" style="color:#FFB870;text-decoration:none;border-bottom:1px dotted rgba(255,184,112,.5)">▸ 淺色版 LIGHT</a>
+  <span class="sp"></span>
+  <div class="meta"><div><div class="k">View</div><div class="v"><a href="light.html" style="color:#FFB870;text-decoration:none;border-bottom:1px solid rgba(255,184,112,.35)">淺色版</a></div></div>
+    <div><div class="k">Period</div><div class="v">2026 年 8 月</div></div>
+    <div><div class="k">Updated</div><div class="v" id="clock">--:--</div></div>
+    <div><div class="k">Data</div><div class="v" style="color:#FFB870">示範 Sample</div></div>
+  </div>
 </header>
 
-<div class="notice z">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB870" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>
-  <div><b>全部數字為示範數據（Sample data）</b>，由 Ada 憑空生成，只為展示版面與功能，並非 DoRich 的真實營運數字。接上真實數據源之後，同一版面會自動填入真數。</div>
+<div class="flag z">
+  <div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFB870" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.4v.01"/></svg>
+    <span><b>全部數字為示範數據</b>，由 Ada 憑空生成，只為展示版面與功能，並非 DoRich 的真實營運數字。接上真實數據源之後，同一版面會自動填入真數。</span>
+  </div>
 </div>
 
 <div class="wrap z">
-  <div class="grid grid-hero">
-<section class="pan dr-hud an"><i class="bk tr"></i><i class="bk bl"></i>
-      <div class="hd"><span class="idx">02</span><h2>Registration &amp; Attendance Funnel</h2><span class="tc">報名與出席漏斗 · 核心模組</span><span class="mod">MOD-02 // PRIMARY</span></div>
+
+  <!-- HERO · funnel -->
+  <div class="row row-1">
+    <section class="card an">
+      <div class="hd"><h2>Registration &amp; Attendance</h2><span class="tc">報名與出席漏斗</span></div>
       <p class="sub">Meta Lead Ads 報名 → Sales Team 電話跟進結果，按場次顯示</p>
       <div class="tiles">
-        <div class="tl"><div class="k">Registered</div><div class="v">564</div><div class="d fl">5 場 · 8月</div></div>
-        <div class="tl hero"><div class="k">Confirmed</div><div class="v">382</div><div class="d dn">67.7% 轉化</div></div>
-        <div class="tl"><div class="k">No Reply</div><div class="v">117</div><div class="d" style="color:#E5B454">20.7% 待跟進</div></div>
-        <div class="tl"><div class="k">Rejected</div><div class="v">65</div><div class="d fl">11.5%</div></div>
+        <div class="tile"><div class="k">總報名 Registered</div><div class="v">564</div><div class="d">5 場 · 8 月</div></div>
+        <div class="tile lead"><div class="k">確認出席 Confirmed</div><div class="v">382</div><div class="d dn">67.7% 轉化</div></div>
+        <div class="tile"><div class="k">未回覆 No reply</div><div class="v">117</div><div class="d">20.7% 待跟進</div></div>
+        <div class="tile"><div class="k">拒絕出席 Rejected</div><div class="v">65</div><div class="d">11.5%</div></div>
       </div>
       <div id="funnel"></div>
       <div class="legend" id="flegend"></div>
-      <p style="font-size:10.5px; color:var(--dr-txt-3); margin:9px 0 0">
-        每條柱的總高度 = 該場總報名人數；三段為互斥的跟進結果，加起來等於總報名。段內數字為人數，確保色弱人士亦可讀。
-      </p>
+      <p class="note">每條柱的總高度 = 該場總報名人數；三段為互斥的跟進結果，加起來等於總報名。段內數字為人數，確保色弱人士亦可讀。</p>
     </section>
   </div>
 
-  <div class="grid grid-3">
-<section class="pan dr-hud an"><i class="bk tr"></i><i class="bk bl"></i>
-      <div class="hd"><span class="idx">01</span><h2>Marketing / Ad Spend</h2><span class="tc">營銷廣告開支</span><span class="mod">MOD-01</span></div>
-      <p class="sub">Meta 廣告每日花費與信用卡額度消耗</p>
+  <!-- three supporting modules -->
+  <div class="row row-3">
+    <section class="card an">
+      <div class="hd"><h2>Ad Spend</h2><span class="tc">營銷廣告開支</span></div>
+      <p class="sub">Meta 廣告每日花費與信用卡額度</p>
       <div class="tiles">
-        <div class="tl hero"><div class="k">MTD Spend</div><div class="v">$46,820</div><div class="d up">▲ 12.4% 對上月</div></div>
-        <div class="tl"><div class="k">Cost / Lead</div><div class="v">$71.4</div><div class="d dn">▼ 6.1% 更平</div></div>
-        <div class="tl"><div class="k">New Leads</div><div class="v">656</div><div class="d fl">8月 1–30</div></div>
-        <div class="tl"><div class="k">Remaining</div><div class="v">$13,180</div><div class="d fl">預算 $60,000</div></div>
+        <div class="tile lead"><div class="k">本月累計</div><div class="v">$46,820</div><div class="d up">▲ 12.4% 對上月</div></div>
+        <div class="tile"><div class="k">Cost / Lead</div><div class="v">$71.4</div><div class="d dn">▼ 6.1% 更平</div></div>
+        <div class="tile"><div class="k">新增 Lead</div><div class="v">656</div><div class="d">8 月 1–30</div></div>
+        <div class="tile"><div class="k">剩餘預算</div><div class="v">$13,180</div><div class="d">預算 $60,000</div></div>
       </div>
       <div id="spend"></div>
-      <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--dr-hud-line2)">
-        <div class="mrow"><span class="l">Credit Card Utilisation</span><span class="r">$52,400 / $80,000 · 65.5%</span></div>
+      <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--line-2)">
+        <div class="mrow"><span class="l">信用卡已用額度</span><span class="r">$52,400 / $80,000 · 65.5%</span></div>
         <div class="meter"><div class="mfill" style="width:65.5%"></div><div class="mthr" style="left:85%"></div></div>
-        <div class="mcap"><span>財務同事每月結單日更新一次</span><span class="thrk"><i></i>85% ALERT · CLEAR</span></div>
+        <div class="mcap"><span>財務同事每月結單日更新一次</span><span class="a">85% 警戒線 · 未觸發</span></div>
       </div>
     </section>
-<section class="pan dr-hud an"><i class="bk tr"></i><i class="bk bl"></i>
-      <div class="hd"><span class="idx">04</span><h2>Freelance Payments</h2><span class="tc">外判與內部付款排程</span><span class="mod">MOD-04</span></div>
-      <p class="sub">雙檢視：External 外判合作方 · Internal 內部結算</p>
+
+    <section class="card an">
+      <div class="hd"><h2>Freelance Payments</h2><span class="tc">付款排程</span></div>
+      <p class="sub">External 外判合作方 · Internal 內部結算</p>
       <div class="tabs" role="tablist">
-        <button class="tb" role="tab" aria-selected="true" data-p="ext">EXTERNAL 外判</button>
-        <button class="tb" role="tab" aria-selected="false" data-p="int">INTERNAL 內部</button>
+        <button class="tb" role="tab" aria-selected="true" data-p="ext">External</button>
+        <button class="tb" role="tab" aria-selected="false" data-p="int">Internal</button>
       </div>
       <div id="p-ext">
         <table>
-          <thead><tr><th>Ref</th><th>對象</th><th>項目</th><th>到期</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
+          <thead><tr><th>對象</th><th>項目</th><th>到期</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
           <tbody>
-            <tr><td class="ref">FP-2091</td><td class="nm">陳氏設計工作室</td><td>課程視覺設計</td><td>08-05</td><td class="num">$12,500</td><td><span class="dr-chip dr-chip--crit">OVERDUE</span></td></tr>
-            <tr><td class="ref">FP-2094</td><td class="nm">Kelvin Lau</td><td>活動攝影 · 7月場</td><td>08-08</td><td class="num">$6,800</td><td><span class="dr-chip dr-chip--warn">PENDING</span></td></tr>
-            <tr><td class="ref">FP-2098</td><td class="nm">黃老師</td><td>客席導師費 × 2 堂</td><td>08-15</td><td class="num">$9,000</td><td><span class="dr-chip dr-chip--idle">UPCOMING</span></td></tr>
-            <tr><td class="ref">FP-2103</td><td class="nm">旺角培訓中心</td><td>場地租用 · 8月</td><td>08-20</td><td class="num">$18,400</td><td><span class="dr-chip dr-chip--idle">UPCOMING</span></td></tr>
-            <tr><td class="ref">FP-2107</td><td class="nm">Studio Nine</td><td>短片剪接 × 8 條</td><td>07-28</td><td class="num">$4,200</td><td><span class="dr-chip dr-chip--good">PAID</span></td></tr>
+            <tr><td class="nm">陳氏設計工作室</td><td>課程視覺設計</td><td>08-05</td><td class="num">$12,500</td><td><span class="badge"><i style="background:#D33B4C"></i>逾期</span></td></tr>
+            <tr><td class="nm">Kelvin Lau</td><td>活動攝影</td><td>08-08</td><td class="num">$6,800</td><td><span class="badge"><i style="background:#C98A1E"></i>待付</span></td></tr>
+            <tr><td class="nm">黃老師</td><td>客席導師費 × 2 堂</td><td>08-15</td><td class="num">$9,000</td><td><span class="badge"><i style="background:#46536B"></i>未到期</span></td></tr>
+            <tr><td class="nm">旺角培訓中心</td><td>場地租用</td><td>08-20</td><td class="num">$18,400</td><td><span class="badge"><i style="background:#46536B"></i>未到期</span></td></tr>
+            <tr><td class="nm">Studio Nine</td><td>短片剪接 × 8 條</td><td>07-28</td><td class="num">$4,200</td><td><span class="badge"><i style="background:#14A5B8"></i>已付</span></td></tr>
           </tbody>
         </table>
       </div>
       <div id="p-int" hidden>
         <table>
-          <thead><tr><th>Ref</th><th>同事</th><th>項目</th><th>到期</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
+          <thead><tr><th>同事</th><th>項目</th><th>到期</th><th style="text-align:right">金額</th><th>狀態</th></tr></thead>
           <tbody>
-            <tr><td class="ref">IP-0412</td><td class="nm">Ada Cheng</td><td>7月場次超時津貼</td><td>08-07</td><td class="num">$2,400</td><td><span class="dr-chip dr-chip--warn">PENDING</span></td></tr>
-            <tr><td class="ref">IP-0415</td><td class="nm">Marco Ho</td><td>課程統籌獎金 · Q2</td><td>08-10</td><td class="num">$8,000</td><td><span class="dr-chip dr-chip--idle">UPCOMING</span></td></tr>
-            <tr><td class="ref">IP-0418</td><td class="nm">Janice Wong</td><td>墊支報銷 · 物資</td><td>08-12</td><td class="num">$1,860</td><td><span class="dr-chip dr-chip--idle">UPCOMING</span></td></tr>
-            <tr><td class="ref">IP-0407</td><td class="nm">Terence Lam</td><td>兼職導師 · 7月</td><td>07-30</td><td class="num">$5,600</td><td><span class="dr-chip dr-chip--good">PAID</span></td></tr>
+            <tr><td class="nm">Ada Cheng</td><td>超時津貼</td><td>08-07</td><td class="num">$2,400</td><td><span class="badge"><i style="background:#C98A1E"></i>待付</span></td></tr>
+            <tr><td class="nm">Marco Ho</td><td>統籌獎金 · Q2</td><td>08-10</td><td class="num">$8,000</td><td><span class="badge"><i style="background:#46536B"></i>未到期</span></td></tr>
+            <tr><td class="nm">Janice Wong</td><td>墊支報銷</td><td>08-12</td><td class="num">$1,860</td><td><span class="badge"><i style="background:#46536B"></i>未到期</span></td></tr>
+            <tr><td class="nm">Terence Lam</td><td>兼職導師 · 7 月</td><td>07-30</td><td class="num">$5,600</td><td><span class="badge"><i style="background:#14A5B8"></i>已付</span></td></tr>
           </tbody>
         </table>
       </div>
-      <p style="font-size:10.5px; color:var(--dr-txt-3); margin:11px 0 0; padding-top:10px; border-top:1px solid var(--dr-hud-line2)">
-        每月 25 日自動比對「本月已完成工作」與「已登記付款」，列出疑似漏單並電郵通知。
-      </p>
+      <p class="note">每月 25 日自動比對「本月已完成工作」與「已登記付款」，列出疑似漏單並電郵通知。</p>
     </section>
-<section class="pan dr-hud an"><i class="bk tr"></i><i class="bk bl"></i>
-      <div class="hd"><span class="idx">03</span><h2>Events &amp; Tasks</h2><span class="tc">活動與任務</span><span class="mod">MOD-03</span></div>
+
+    <section class="card an">
+      <div class="hd"><h2>Events &amp; Tasks</h2><span class="tc">活動與任務</span></div>
       <p class="sub">Google Calendar 活動自動生成準備任務</p>
       <div class="cal" id="cal"></div>
-      <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--dr-hud-line2)">
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px">
-          <span class="dr-eyebrow">This week</span>
-          <span style="font-family:var(--dr-mono); font-size:10.5px; color:var(--dr-txt-3)">4 / 7 done</span>
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--line-2)">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px">
+          <span style="font-size:11px; color:var(--tx3); letter-spacing:.05em; text-transform:uppercase; font-weight:500">本週待辦</span>
+          <span style="font-family:var(--mono); font-size:11px; color:var(--tx3)">4 / 7</span>
         </div>
-        <ul class="tq">
-          <li class="crit"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F0838F" stroke-width="2.4" stroke-linecap="round"><path d="M12 3.5 22 20H2z"/><path d="M12 10v4"/><path d="M12 17v.01"/></svg><span class="tx"><span class="n">發出提醒電郵（第一輪）</span><span class="o">T-3 · SALES TEAM</span></span><span class="dr-chip dr-chip--crit">OVERDUE 1D</span></li>
-          <li class="warn"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E5B454" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3 2"/></svg><span class="tx"><span class="n">印製講義及簽到表</span><span class="o">T-2 · 行政</span></span><span class="dr-chip dr-chip--warn">TODAY</span></li>
-          <li class=""><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E5B454" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3 2"/></svg><span class="tx"><span class="n">物資點算與場地佈置</span><span class="o">T-1 · 行政</span></span><span class="dr-chip dr-chip--idle">08-04</span></li>
-          <li class="ok"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5FD3E2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="tx"><span class="n">預訂場地 — 投資入門班</span><span class="o">T-14 · 場地負責人</span></span><span class="dr-chip dr-chip--good">DONE</span></li>
-          <li class="ok"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5FD3E2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span class="tx"><span class="n">確認導師檔期</span><span class="o">T-14 · 課程統籌</span></span><span class="dr-chip dr-chip--good">DONE</span></li>
+        <ul class="tk">
+          <li><span class="dot c"></span><span class="tx"><span class="n">發出提醒電郵（第一輪）</span><span class="o">T-3 · Sales Team</span></span><span class="st c">逾期 1 日</span></li>
+          <li><span class="dot w"></span><span class="tx"><span class="n">印製講義及簽到表</span><span class="o">T-2 · 行政</span></span><span class="st w">今日到期</span></li>
+          <li><span class="dot n"></span><span class="tx"><span class="n">物資點算與場地佈置</span><span class="o">T-1 · 行政</span></span><span class="st">08-04</span></li>
+          <li class="done"><span class="dot g"></span><span class="tx"><span class="n">預訂場地 — 投資入門班</span><span class="o">T-14 · 場地負責人</span></span><span class="st g">已完成</span></li>
+          <li class="done"><span class="dot g"></span><span class="tx"><span class="n">確認導師檔期</span><span class="o">T-14 · 課程統籌</span></span><span class="st g">已完成</span></li>
         </ul>
       </div>
     </section>
   </div>
 
-  <div class="grid grid-hero">
-<section class="pan dr-hud an"><i class="bk tr"></i><i class="bk bl"></i>
-      <div class="hd"><span class="idx">05</span><h2>Global Markets</h2><span class="tc">環球市場與新聞</span><span class="mod">MOD-05</span></div>
+  <!-- markets -->
+  <div class="row row-1">
+    <section class="card an">
+      <div class="hd"><h2>Global Markets</h2><span class="tc">環球市場與新聞</span></div>
       <p class="sub">報價每 15–30 分鐘更新 · 新聞摘要每日 08:00</p>
       <div class="mk" id="mk"></div>
-      <div style="padding-top:12px; border-top:1px solid var(--dr-hud-line2)">
-        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px">
-          <span class="dr-eyebrow">Daily brief</span>
-          <span style="font-family:var(--dr-mono); font-size:10px; color:var(--dr-txt-3)">AI · 08:00</span>
-        </div>
-        <ul class="news">
-          <li><div class="h">聯儲局會議紀錄顯示對減息步伐取態審慎，市場預期九月維持不變。</div><div class="m"><span class="rgn">US</span><span class="src">REUTERS</span><span>08:12</span><span class="tag">納指</span></div></li>
-          <li><div class="h">金價於美元回軟下企穩每盎司 2,380 美元上方，連續第三日上升。</div><div class="m"><span class="rgn">CMD</span><span class="src">KITCO</span><span>07:45</span><span class="tag">黃金</span></div></li>
-          <li><div class="h">恒指早段高開，內銀股造好帶動大市，成交較上日增加。</div><div class="m"><span class="rgn">HK</span><span class="src">AASTOCKS</span><span>09:35</span><span class="tag">恒指</span></div></li>
-          <li><div class="h">科技股業績勝預期帶動標普 500 收市造好，半導體板塊領漲。</div><div class="m"><span class="rgn">US</span><span class="src">BLOOMBERG</span><span>06:20</span><span class="tag">標普</span></div></li>
-        </ul>
-      </div>
+      <ul class="news">
+        <li><div class="h">聯儲局會議紀錄顯示對減息步伐取態審慎，市場預期九月維持不變。</div><div class="m"><span class="src">Reuters</span><time>08:12</time><span>納指</span></div></li>
+        <li><div class="h">金價於美元回軟下企穩每盎司 2,380 美元上方，連續第三日上升。</div><div class="m"><span class="src">Kitco</span><time>07:45</time><span>黃金</span></div></li>
+        <li><div class="h">恒指早段高開，內銀股造好帶動大市，成交較上日增加。</div><div class="m"><span class="src">AAStocks</span><time>09:35</time><span>恒指</span></div></li>
+        <li><div class="h">科技股業績勝預期帶動標普 500 收市造好，半導體板塊領漲。</div><div class="m"><span class="src">Bloomberg</span><time>06:20</time><span>標普</span></div></li>
+      </ul>
     </section>
   </div>
 
-  <div class="foot dr-hud">
-    <h3>關於這個原型 · About this prototype</h3>
-    呢個係 Jackson 揀嘅第三個 style（科技感 / JARVIS）版本，五大模組全部喺度。
+  <section class="card foot">
+    <h3>關於這個原型</h3>
+    五大模組全部喺度，數字係示範用，接上真實數據源之後會自動換成真數。
     <ul>
-      <li><b>數字全部係示範用</b>，接上真實數據源之後會自動換成真數。</li>
-      <li><b>呢個效果係自訂網頁（custom web app），Looker Studio 做唔到</b>：Looker Studio 冇 report-level 嘅 custom CSS / JavaScript，內置嘅 Gauge 係橫向長條而唔係圓形錶。呢點要喺開工之前決定清楚。</li>
-      <li><b>深藍底 + 橙色其實正正係 DoRich 自己網站嘅語言</b> — dorich.co 個 nav bar 就係深色底配橙色 logo，所以呢個科技感版本冇離開品牌。</li>
+      <li><b>立體效果係真 3D（WebGL / Three.js）</b>，唔係圖片。背景嗰個線框結構會隨滑鼠輕微轉動；如果部機唔支援 WebGL，會自動退返做純深色底，唔會爛。</li>
+      <li><b>呢個效果要用自訂網頁（custom web app）先做到，Looker Studio 做唔到</b>：佢冇 report-level 嘅 custom CSS / JavaScript，內置嘅 Gauge 係橫向長條而唔係圓形錶。呢點要喺開工之前決定清楚。</li>
+      <li><b>深藍底 + 橙色係 DoRich 自己網站嘅語言</b> — dorich.co 個 nav bar 就係深色底配橙色 logo。</li>
       <li>報名漏斗已修正建議書入面嘅重複計算；圖表配色經色盲模擬驗證，每段直接標數，唔單靠顏色分辨。</li>
     </ul>
-  </div>
+  </section>
 </div>
-
-<div class="sysline z"><span>DoRich Ops · Build v0.2 · Node HK-01</span><span>All figures shown are sample data for demonstration only</span></div>
 
 <div id="tip" role="status" aria-live="polite"></div>
 
@@ -436,59 +384,53 @@ function el(n,a){var e=document.createElementNS(NS,n);for(var k in a){if(a[k]!=n
 var tip=document.getElementById("tip");
 function show(h,x,y){
   tip.innerHTML=h; tip.style.opacity="1";
-  var r=tip.getBoundingClientRect(), l=x+14, t=y-r.height-12;
-  if(l+r.width>innerWidth-8) l=x-r.width-14;
-  if(l<8) l=8; if(t<8) t=y+18;
+  var r=tip.getBoundingClientRect(), l=x+15, t=y-r.height-13;
+  if(l+r.width>innerWidth-8) l=x-r.width-15;
+  if(l<8) l=8; if(t<8) t=y+19;
   tip.style.left=l+"px"; tip.style.top=t+"px";
 }
 function hide(){tip.style.opacity="0";}
 addEventListener("scroll",hide,{passive:true});
 
-/* clock — HKT */
 function tick(){
   var d=new Date(), u=d.getTime()+d.getTimezoneOffset()*6e4, hk=new Date(u+288e5);
   var p=function(n){return n<10?"0"+n:""+n;};
   var e=document.getElementById("clock");
-  if(e) e.textContent=p(hk.getHours())+":"+p(hk.getMinutes())+":"+p(hk.getSeconds());
+  if(e) e.textContent=p(hk.getHours())+":"+p(hk.getMinutes())+" HKT";
 }
-tick(); setInterval(tick,1000);
+tick(); setInterval(tick,30000);
 
-/* ---- 01 spend ---- */
+/* ---- ad spend ---- */
 var SPEND=[1180,1420,1650,980,1240,1890,2140,1760,1320,1080,1540,1980,2280,1840,1460,1220,1700,2050,2380,1920,1580,1340,1760,2160,2420,1880,1520,1280,1640,2010];
 function drawSpend(){
   var h=document.getElementById("spend"); if(!h) return; h.innerHTML="";
-  var W=h.clientWidth||640,H=236,P={t:14,r:10,b:24,l:44},iw=W-P.l-P.r,ih=H-P.t-P.b;
+  var W=h.clientWidth||520,H=190,P={t:12,r:8,b:24,l:42},iw=W-P.l-P.r,ih=H-P.t-P.b;
   var max=Math.ceil(Math.max.apply(null,SPEND)/500)*500;
   var s=el("svg",{class:"chart",viewBox:"0 0 "+W+" "+H,height:H,role:"img","aria-label":"每日廣告花費（示範數據）"});
   var df=el("defs",{});
-  var g=el("linearGradient",{id:"sg",x1:"0",y1:"0",x2:"0",y2:"1"});
-  g.appendChild(el("stop",{offset:"0%","stop-color":"#FF7300","stop-opacity":".34"}));
+  var g=el("linearGradient",{id:"sg2",x1:"0",y1:"0",x2:"0",y2:"1"});
+  g.appendChild(el("stop",{offset:"0%","stop-color":"#FF7300","stop-opacity":".26"}));
   g.appendChild(el("stop",{offset:"100%","stop-color":"#FF7300","stop-opacity":"0"}));
-  var f=el("filter",{id:"gl",x:"-50%",y:"-50%",width:"200%",height:"200%"});
-  f.appendChild(el("feGaussianBlur",{stdDeviation:"3.4",result:"b"}));
-  var m=el("feMerge",{}); m.appendChild(el("feMergeNode",{in:"b"})); m.appendChild(el("feMergeNode",{in:"SourceGraphic"}));
-  f.appendChild(m); df.appendChild(g); df.appendChild(f); s.appendChild(df);
-
-  for(var i=0;i<=4;i++){
-    var y=P.t+ih-(ih*i/4);
+  df.appendChild(g); s.appendChild(df);
+  for(var i=0;i<=3;i++){
+    var y=P.t+ih-(ih*i/3);
     s.appendChild(el("line",{x1:P.l,y1:y,x2:P.l+iw,y2:y,class:"gl"}));
-    var t=el("text",{x:P.l-7,y:y+3.4,class:"ax","text-anchor":"end"});
-    t.textContent="$"+((max*i/4)/1000).toFixed(1)+"k"; s.appendChild(t);
+    var t=el("text",{x:P.l-8,y:y+3.4,class:"ax","text-anchor":"end"});
+    t.textContent="$"+((max*i/3)/1000).toFixed(1)+"k"; s.appendChild(t);
   }
   function X(i){return P.l+iw*i/(SPEND.length-1);}
   function Y(v){return P.t+ih-ih*v/max;}
   var da="M"+X(0)+","+(P.t+ih), dl="";
   for(var j=0;j<SPEND.length;j++){da+=" L"+X(j)+","+Y(SPEND[j]); dl+=(j?" L":"M")+X(j)+","+Y(SPEND[j]);}
   da+=" L"+X(SPEND.length-1)+","+(P.t+ih)+" Z";
-  s.appendChild(el("path",{d:da,fill:"url(#sg)"}));
-  s.appendChild(el("path",{d:dl,fill:"none",stroke:"#FF7300","stroke-width":"2",
-    "stroke-linejoin":"round","stroke-linecap":"round",filter:"url(#gl)"}));
-  [0,7,14,21,29].forEach(function(i){
-    var t=el("text",{x:X(i),y:P.t+ih+15,class:"ax","text-anchor":"middle"});
+  s.appendChild(el("path",{d:da,fill:"url(#sg2)"}));
+  s.appendChild(el("path",{d:dl,fill:"none",stroke:"#FF7300","stroke-width":"1.8","stroke-linejoin":"round","stroke-linecap":"round"}));
+  [0,9,19,29].forEach(function(i){
+    var t=el("text",{x:X(i),y:P.t+ih+16,class:"ax","text-anchor":"middle"});
     t.textContent="08/"+(i+1<10?"0":"")+(i+1); s.appendChild(t);
   });
-  var cr=el("line",{x1:0,y1:P.t,x2:0,y2:P.t+ih,stroke:"#FF7300","stroke-width":"1","stroke-dasharray":"3 3",opacity:"0"});
-  var dt=el("circle",{r:4,fill:"#FF7300",stroke:"#0C1526","stroke-width":"2",opacity:"0"});
+  var cr=el("line",{x1:0,y1:P.t,x2:0,y2:P.t+ih,stroke:"rgba(255,115,0,.5)","stroke-width":"1",opacity:"0"});
+  var dt=el("circle",{r:3.6,fill:"#FF7300",stroke:"#0C1526","stroke-width":"2",opacity:"0"});
   s.appendChild(cr); s.appendChild(dt);
   var hit=el("rect",{x:P.l,y:P.t,width:iw,height:ih,fill:"transparent",class:"hit"});
   s.appendChild(hit);
@@ -498,58 +440,54 @@ function drawSpend(){
     i=Math.max(0,Math.min(SPEND.length-1,i));
     cr.setAttribute("x1",X(i)); cr.setAttribute("x2",X(i)); cr.setAttribute("opacity","1");
     dt.setAttribute("cx",X(i)); dt.setAttribute("cy",Y(SPEND[i])); dt.setAttribute("opacity","1");
-    show("<b>08/"+(i+1<10?"0":"")+(i+1)+"</b><br><span class='k'>SPEND</span> $"+SPEND[i].toLocaleString(),ev.clientX,ev.clientY);
+    show("<b>8 月 "+(i+1)+" 日</b><br><span class='k'>廣告花費</span> $"+SPEND[i].toLocaleString(),ev.clientX,ev.clientY);
   });
   hit.addEventListener("mouseleave",function(){cr.setAttribute("opacity","0");dt.setAttribute("opacity","0");hide();});
   h.appendChild(s);
 }
 
-/* ---- 02 funnel ---- */
-var SER=[
-  {k:"confirmed",l:"確認出席 Confirmed",c:"#14A5B8"},
-  {k:"noreply",  l:"未回覆 No-reply",   c:"#7A68D8"},
-  {k:"rejected", l:"拒絕出席 Rejected", c:"#D33B4C"}
-];
-var SHOP=[
-  {n:"投資入門班",date:"08-05",confirmed:86,noreply:28,rejected:14},
-  {n:"股票估值工作坊",date:"08-09",confirmed:61,noreply:22,rejected:13},
-  {n:"青少年理財營",date:"08-14",confirmed:112,noreply:27,rejected:15},
-  {n:"期權策略講座",date:"08-20",confirmed:44,noreply:19,rejected:11},
-  {n:"DoRichPreneur Club",date:"08-27",confirmed:79,noreply:21,rejected:12}
-];
+/* ---- funnel ---- */
+var SER=[{k:"confirmed",l:"確認出席 Confirmed",c:"#14A5B8"},
+         {k:"noreply",l:"未回覆 No-reply",c:"#7A68D8"},
+         {k:"rejected",l:"拒絕出席 Rejected",c:"#D33B4C"}];
+var SHOP=[{n:"投資入門班",date:"8 月 5 日",confirmed:86,noreply:28,rejected:14},
+          {n:"股票估值工作坊",date:"8 月 9 日",confirmed:61,noreply:22,rejected:13},
+          {n:"青少年理財營",date:"8 月 14 日",confirmed:112,noreply:27,rejected:15},
+          {n:"期權策略講座",date:"8 月 20 日",confirmed:44,noreply:19,rejected:11},
+          {n:"DoRichPreneur Club",date:"8 月 27 日",confirmed:79,noreply:21,rejected:12}];
 function drawFunnel(){
   var h=document.getElementById("funnel"); if(!h) return; h.innerHTML="";
-  var nar=innerWidth<620;
-  var W=h.clientWidth||900,H=nar?248:226,P={t:20,r:10,b:nar?44:36,l:38},iw=W-P.l-P.r,ih=H-P.t-P.b;
+  var nar=innerWidth<640;
+  var W=h.clientWidth||1000,H=nar?260:260,P={t:22,r:8,b:nar?48:40,l:40},iw=W-P.l-P.r,ih=H-P.t-P.b;
   var max=0; SHOP.forEach(function(s){max=Math.max(max,s.confirmed+s.noreply+s.rejected);});
   max=Math.ceil(max/40)*40;
   var s=el("svg",{class:"chart",viewBox:"0 0 "+W+" "+H,height:H,role:"img","aria-label":"各場次報名跟進結果（示範數據）"});
   for(var i=0;i<=4;i++){
     var y=P.t+ih-(ih*i/4);
     s.appendChild(el("line",{x1:P.l,y1:y,x2:P.l+iw,y2:y,class:"gl"}));
-    var t=el("text",{x:P.l-7,y:y+3.4,class:"ax","text-anchor":"end"});
+    var t=el("text",{x:P.l-8,y:y+3.4,class:"ax","text-anchor":"end"});
     t.textContent=String(Math.round(max*i/4)); s.appendChild(t);
   }
-  var slot=iw/SHOP.length, bw=Math.min(nar?32:62, slot*.56);
+  var slot=iw/SHOP.length, bw=Math.min(nar?34:78, slot*.5);
   SHOP.forEach(function(sh,si){
     var cx=P.l+slot*si+slot/2, tot=sh.confirmed+sh.noreply+sh.rejected, acc=0;
     SER.forEach(function(se){
-      var v=sh[se.k], hp=ih*v/max, y=P.t+ih-ih*(acc+v)/max, sh2=Math.max(hp-2,1);
-      var r=el("rect",{x:cx-bw/2,y:y,width:bw,height:sh2,fill:se.c,rx:"2",class:"hit"});
+      var v=sh[se.k], hp=ih*v/max, y=P.t+ih-ih*(acc+v)/max, hh=Math.max(hp-2,1);
+      var r=el("rect",{x:cx-bw/2,y:y,width:bw,height:hh,fill:se.c,rx:"3",class:"hit"});
       function t(ev){show("<b>"+sh.n+"</b><br><span class='k'>"+se.l+"</span> "+v+" 人 ("+Math.round(v/tot*100)+"%)",ev.clientX,ev.clientY);}
       r.addEventListener("mouseenter",t); r.addEventListener("mousemove",t); r.addEventListener("mouseleave",hide);
       s.appendChild(r);
-      if(sh2>15){
-        var lb=el("text",{x:cx,y:y+sh2/2+4,"text-anchor":"middle",fill:"#F2F6FA","font-size":"11","font-weight":"700","font-family":"var(--dr-mono)"});
+      if(hh>16){
+        var lb=el("text",{x:cx,y:y+hh/2+4,"text-anchor":"middle",fill:"#F4F7FA","font-size":"11.5","font-weight":"500","font-family":"var(--mono)"});
         lb.textContent=String(v); s.appendChild(lb);
       }
       acc+=v;
     });
-    var tt=el("text",{x:cx,y:P.t+ih-ih*tot/max-7,"text-anchor":"middle",fill:"#FFB870","font-size":"11","font-weight":"700","font-family":"var(--dr-mono)"});
+    var tt=el("text",{x:cx,y:P.t+ih-ih*tot/max-8,"text-anchor":"middle",fill:"#FFB870","font-size":"12","font-weight":"500","font-family":"var(--mono)"});
     tt.textContent=String(tot); s.appendChild(tt);
-    var nm=el("text",{x:cx,y:P.t+ih+14,"text-anchor":"middle",class:"ax",fill:"#A9B4C6"});
+    var nm=el("text",{x:cx,y:P.t+ih+16,"text-anchor":"middle",class:"ax",fill:"#9BA7BC","font-family":"var(--tc)"});
     nm.textContent=nar?(sh.n.length>5?sh.n.slice(0,5)+"…":sh.n):sh.n; s.appendChild(nm);
-    var dd=el("text",{x:cx,y:P.t+ih+27,"text-anchor":"middle",class:"ax"});
+    var dd=el("text",{x:cx,y:P.t+ih+30,"text-anchor":"middle",class:"ax"});
     dd.textContent=sh.date; s.appendChild(dd);
   });
   h.appendChild(s);
@@ -558,16 +496,15 @@ function drawFunnel(){
     SER.forEach(function(se){
       var d=document.createElement("span"); d.className="li";
       var w=document.createElement("span"); w.className="sw"; w.style.background=se.c;
-      w.style.boxShadow="0 0 8px "+se.c;
       d.appendChild(w); d.appendChild(document.createTextNode(se.l)); lg.appendChild(d);
     });
   }
 }
 
-/* ---- 03 calendar ---- */
+/* ---- calendar ---- */
 function drawCal(){
   var h=document.getElementById("cal"); if(!h) return; h.innerHTML="";
-  ["M","T","W","T","F","S","S"].forEach(function(d){
+  ["一","二","三","四","五","六","日"].forEach(function(d){
     var e=document.createElement("div"); e.className="dw"; e.textContent=d; h.appendChild(e);
   });
   var lead=5, days=31, ev={5:1,9:1,14:1,20:1,27:1}, now=3;
@@ -577,10 +514,10 @@ function drawCal(){
     c.className="d"+(ev[d]?" ev":"")+(d===now?" now":"");
     c.textContent=String(d);
     if(ev[d]){
-      var f=null; for(var k=0;k<SHOP.length;k++){if(SHOP[k].date==="08-"+(d<10?"0":"")+d) f=SHOP[k];}
+      var f=null; for(var k=0;k<SHOP.length;k++){if(SHOP[k].date==="8 月 "+d+" 日") f=SHOP[k];}
       if(f){(function(x){
         c.style.cursor="pointer";
-        function t(ev2){show("<b>"+x.n+"</b><br><span class='k'>報名</span> "+(x.confirmed+x.noreply+x.rejected)+" 人",ev2.clientX,ev2.clientY);}
+        function t(e2){show("<b>"+x.n+"</b><br><span class='k'>報名</span> "+(x.confirmed+x.noreply+x.rejected)+" 人",e2.clientX,e2.clientY);}
         c.addEventListener("mouseenter",t); c.addEventListener("mousemove",t); c.addEventListener("mouseleave",hide);
       })(f);}
     }
@@ -588,28 +525,25 @@ function drawCal(){
   }
 }
 
-/* ---- 05 markets ---- */
-var MK=[
-  {n:"GOLD XAU/USD",v:"2,381.60",c:"+0.68%",up:1,s:[10,12,11,14,13,16,15,18,17,19]},
-  {n:"NASDAQ",v:"16,832.62",c:"+1.10%",up:1,s:[14,13,15,14,16,15,17,16,18,19]},
-  {n:"HANG SENG",v:"18,687.82",c:"-0.34%",up:0,s:[18,17,18,16,17,15,16,14,15,14]},
-  {n:"S&P 500",v:"5,304.72",c:"+0.08%",up:1,s:[15,15,16,15,16,16,17,16,17,17]}
-];
+/* ---- markets ---- */
+var MK=[{n:"黃金 XAU/USD",v:"2,381.60",c:"+0.68%",up:1,s:[10,12,11,14,13,16,15,18,17,19]},
+        {n:"納斯達克",v:"16,832.62",c:"+1.10%",up:1,s:[14,13,15,14,16,15,17,16,18,19]},
+        {n:"恒生指數",v:"18,687.82",c:"-0.34%",up:0,s:[18,17,18,16,17,15,16,14,15,14]},
+        {n:"標普 500",v:"5,304.72",c:"+0.08%",up:1,s:[15,15,16,15,16,16,17,16,17,17]}];
 function drawMk(){
   var h=document.getElementById("mk"); if(!h) return; h.innerHTML="";
   MK.forEach(function(m){
     var d=document.createElement("div"); d.className="mkt";
     d.innerHTML='<div class="n">'+m.n+'</div><div class="v">'+m.v+'</div><div class="c '+(m.up?"pos":"neg")+'">'+m.c+'</div>';
-    var w=100,ht=24,mx=Math.max.apply(null,m.s),mn=Math.min.apply(null,m.s),rg=(mx-mn)||1,dd="";
+    var w=100,ht=26,mx=Math.max.apply(null,m.s),mn=Math.min.apply(null,m.s),rg=(mx-mn)||1,dd="";
     m.s.forEach(function(v,i){dd+=(i?" L":"M")+(i*(w/(m.s.length-1)))+","+(ht-((v-mn)/rg)*(ht-4)-2);});
     var s=el("svg",{viewBox:"0 0 "+w+" "+ht,width:"100%",height:ht,preserveAspectRatio:"none","aria-hidden":"true"});
-    s.appendChild(el("path",{d:dd,fill:"none",stroke:m.up?"#14A5B8":"#D33B4C","stroke-width":"2",
+    s.appendChild(el("path",{d:dd,fill:"none",stroke:m.up?"#14A5B8":"#D33B4C","stroke-width":"1.8",
       "stroke-linejoin":"round","stroke-linecap":"round","vector-effect":"non-scaling-stroke"}));
-    s.style.marginTop="6px"; d.appendChild(s); h.appendChild(d);
+    s.style.marginTop="10px"; d.appendChild(s); h.appendChild(d);
   });
 }
 
-/* tabs */
 Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
   b.addEventListener("click",function(){
     Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(o){o.setAttribute("aria-selected","false");});
@@ -621,7 +555,87 @@ Array.prototype.forEach.call(document.querySelectorAll(".tb"),function(b){
 
 function all(){drawSpend();drawFunnel();drawCal();drawMk();}
 all();
-var rt; addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(all,140);});
+var rt; addEventListener("resize",function(){clearTimeout(rt);rt=setTimeout(all,150);});
+})();
+</script>
+
+<script src="vendor/three.min.js"></script>
+<script>
+/* Holographic backdrop — real WebGL, wireframe only. Fails silently to the flat
+   dark background if WebGL is unavailable or the reader prefers reduced motion. */
+(function(){
+  if(!window.THREE) return;
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cv = document.getElementById('bg3d');
+  var renderer;
+  try{ renderer = new THREE.WebGLRenderer({canvas:cv, alpha:true, antialias:true}); }
+  catch(e){ return; }
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+
+  var scene = new THREE.Scene();
+  var cam = new THREE.PerspectiveCamera(48, innerWidth/innerHeight, .1, 200);
+  cam.position.set(0,0,13);
+
+  var ORANGE=0xFF7300, AMBER=0xF4AA29, SKY=0x8FB6DE;
+  function wire(geo,color,op){
+    return new THREE.LineSegments(
+      new THREE.WireframeGeometry(geo),
+      new THREE.LineBasicMaterial({color:color, transparent:true, opacity:op,
+        blending:THREE.AdditiveBlending, depthWrite:false})
+    );
+  }
+
+  /* the signature form: a slowly turning faceted sphere, right of centre */
+  var core = wire(new THREE.IcosahedronGeometry(4.1,1), ORANGE, .55);
+  core.position.set(6.6,1.0,-3.5); scene.add(core);
+  var shell = wire(new THREE.IcosahedronGeometry(5.6,0), AMBER, .32);
+  shell.position.copy(core.position); scene.add(shell);
+
+  /* a counterweight on the left, quieter and cooler */
+  var ring = wire(new THREE.TorusGeometry(3.1,.9,10,28), SKY, .30);
+  ring.position.set(-7.6,-1.4,-5); scene.add(ring);
+
+  /* horizon grid — this is what reads as "holographic table" rather than "space" */
+  var grid = new THREE.GridHelper(60, 34, ORANGE, 0x2A3A55);
+  grid.material.transparent=true; grid.material.opacity=.20;
+  grid.material.blending=THREE.AdditiveBlending; grid.material.depthWrite=false;
+  grid.position.set(0,-7.5,-8); scene.add(grid);
+
+  /* sparse motes for depth */
+  var pg=new THREE.BufferGeometry(), N=260, pos=new Float32Array(N*3);
+  for(var i=0;i<N;i++){
+    pos[i*3]=(Math.random()-.5)*44; pos[i*3+1]=(Math.random()-.5)*26; pos[i*3+2]=(Math.random()-.5)*26-6;
+  }
+  pg.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  var motes=new THREE.Points(pg, new THREE.PointsMaterial({color:0xFFC58A, size:.07,
+    transparent:true, opacity:.75, blending:THREE.AdditiveBlending, depthWrite:false}));
+  scene.add(motes);
+
+  var mx=0,my=0;
+  addEventListener('pointermove',function(e){mx=e.clientX/innerWidth-.5; my=e.clientY/innerHeight-.5;},{passive:true});
+  function resize(){cam.aspect=innerWidth/innerHeight; cam.updateProjectionMatrix();
+    renderer.setSize(innerWidth,innerHeight,false);}
+  addEventListener('resize',resize); resize();
+
+  if(reduce){ renderer.render(scene,cam); return; }
+
+  var run=true,t=0;
+  document.addEventListener('visibilitychange',function(){
+    var was=run; run=!document.hidden; if(run&&!was) loop();
+  });
+  function loop(){
+    if(!run) return;
+    requestAnimationFrame(loop); t+=.0026;
+    core.rotation.y=t*.62; core.rotation.x=t*.22;
+    shell.rotation.y=-t*.34; shell.rotation.z=t*.16;
+    ring.rotation.x=t*.4; ring.rotation.y=t*.26;
+    motes.rotation.y=t*.05;
+    cam.position.x += (mx*1.5 - cam.position.x)*.035;
+    cam.position.y += (-my*1.0 - cam.position.y)*.035;
+    cam.lookAt(0,0,0);
+    renderer.render(scene,cam);
+  }
+  loop();
 })();
 </script>
 </body>
