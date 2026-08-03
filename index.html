@@ -90,23 +90,36 @@ body::before{
 /* ---------------- HUD panel ---------------- */
 .grid{display:grid; gap:16px; grid-template-columns:repeat(12,1fr)}
 .hud{
-  position:relative; grid-column:span 12;
+  position:relative; grid-column:span 12; --acc:var(--dr-orange);
   background:linear-gradient(165deg, var(--dr-panel), var(--dr-deep) 62%);
-  border:1px solid var(--dr-line2); border-radius:10px; padding:17px 18px 18px;
+  padding:17px 18px 18px;
+  clip-path:polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 20px 44px -30px #000;
 }
-.hud::before,.hud::after{
-  content:""; position:absolute; width:15px; height:15px; pointer-events:none;
-  border-color:var(--dr-orange); opacity:.62;
+/* continuous thin glow border, drawn as a clipped ring so the chamfer is followed */
+.hud::before{
+  content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+  background:linear-gradient(150deg, var(--acc), rgba(255,255,255,.16) 32%, transparent 58%, var(--acc));
+  opacity:.55;
+  clip-path:polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px,
+    18px 0, 18px 1.2px, 1.2px 18.6px, 1.2px calc(100% - 1.2px), calc(100% - 18.6px) calc(100% - 1.2px),
+    calc(100% - 1.2px) calc(100% - 18.6px), calc(100% - 1.2px) 1.2px, 18px 1.2px);
 }
-.hud::before{top:-1px; left:-1px; border-top:2px solid; border-left:2px solid; border-top-left-radius:10px}
-.hud::after{bottom:-1px; right:-1px; border-bottom:2px solid; border-right:2px solid; border-bottom-right-radius:10px}
+.hud::after{
+  content:""; position:absolute; left:0; top:0; width:74px; height:2px; pointer-events:none; z-index:3;
+  background:linear-gradient(90deg, var(--acc), transparent);
+  box-shadow:0 0 12px var(--acc);
+}
+#m01{--acc:#FF7300} #m02{--acc:#2E9BE8} #m03{--acc:#F4AA29} #m04{--acc:#FF7300} #m05{--acc:#2E9BE8}
 .hud-h{display:flex; align-items:center; gap:11px; margin-bottom:14px; flex-wrap:wrap}
 .idx{
-  font-family:var(--dr-mono); font-size:11px; font-weight:700; color:var(--dr-orange);
-  border:1px solid var(--dr-line); border-radius:4px; padding:3px 7px; letter-spacing:.06em;
-  background:rgba(255,115,0,.09); flex-shrink:0;
+  font-family:var(--dr-mono); font-size:11.5px; font-weight:700; color:#06101E;
+  padding:4px 13px 4px 9px; letter-spacing:.08em; flex-shrink:0;
+  background:linear-gradient(100deg, var(--acc), color-mix(in srgb, var(--acc) 62%, #FFF));
+  clip-path:polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  box-shadow:0 0 14px -2px var(--acc);
 }
+.hud-h h2{text-shadow:0 0 18px rgba(255,255,255,.12)}
 .hud-h h2{margin:0; font-size:14.5px; font-weight:700; letter-spacing:.02em}
 .hud-h .sub{font-size:11.5px; color:var(--dr-txt-3); font-weight:400}
 .hud-h .spacer{flex:1}
@@ -123,16 +136,48 @@ body::before{
 .gauge .gl{font-family:var(--dr-mono); font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--dr-txt-3)}
 .gauge .gs{font-size:11px; color:var(--dr-txt-2)}
 
+
+/* ---------------- concentric dial ---------------- */
+.dial{position:relative; display:grid; place-items:center; margin:2px auto 6px}
+.dial svg{display:block}
+.dial .core{position:absolute; text-align:center; pointer-events:none}
+.dial .core .cl{font-family:var(--dr-mono); font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--dr-txt-3)}
+.dial .core .cv{font-family:var(--dr-mono); font-size:15px; font-weight:700; color:var(--dr-txt); text-shadow:0 0 14px rgba(255,115,0,.5); margin-bottom:5px}
+.dial .core .cv.sm{font-size:12.5px; color:var(--dr-txt-2); text-shadow:none}
+
+/* ---------------- horizontal glow funnel ---------------- */
+.fbar{display:flex; align-items:center; gap:10px; padding:7px 0}
+.fbar .ic{
+  width:26px; height:26px; flex-shrink:0; display:grid; place-items:center; font-size:12px;
+  border:1px solid rgba(46,155,232,.45); color:#7FC7F5; background:rgba(46,155,232,.10);
+  clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
+}
+.fbar .fl{font-family:var(--dr-mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--dr-txt-2); width:88px; flex-shrink:0}
+.fbar .tr{flex:1; height:22px; background:rgba(255,255,255,.04); border:1px solid var(--dr-line2); position:relative; overflow:hidden; min-width:40px}
+.fbar .fi{
+  position:absolute; inset:0 auto 0 0; height:100%;
+  background:linear-gradient(90deg, rgba(46,155,232,.20), rgba(46,155,232,.75));
+  box-shadow:0 0 18px rgba(46,155,232,.5); transition:width .5s cubic-bezier(.2,.7,.2,1);
+}
+.fbar .fi::after{content:""; position:absolute; right:0; top:0; bottom:0; width:2px; background:#BFE6FF; box-shadow:0 0 10px #7FC7F5}
+.fbar .fv{font-family:var(--dr-mono); font-size:16px; font-weight:700; width:58px; text-align:right; flex-shrink:0; text-shadow:0 0 14px currentColor}
+.fbar .fp{font-family:var(--dr-mono); font-size:10px; color:var(--dr-txt-3); width:42px; text-align:right; flex-shrink:0}
+.fstrip{display:flex; align-items:center; gap:12px; margin-top:10px; padding-top:11px; border-top:1px solid var(--dr-line2)}
+.fcell{flex:1; text-align:center}
+.fcell .k{font-family:var(--dr-mono); font-size:8.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--dr-txt-3); display:block}
+.fcell .v{font-family:var(--dr-mono); font-size:17px; font-weight:700; display:block; text-shadow:0 0 15px currentColor}
+
 /* ---------------- kpi ---------------- */
 .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:9px; margin-bottom:14px}
 .kpi{
-  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2); border-radius:7px;
+  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2);
+  clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
   padding:10px 11px; cursor:pointer; transition:.15s; text-align:left;
 }
 .kpi:hover{border-color:var(--dr-line); background:rgba(255,115,0,.07); transform:translateY(-1px)}
 .kpi.on{border-color:var(--dr-orange); background:rgba(255,115,0,.11)}
 .kpi .k{font-family:var(--dr-mono); font-size:9px; letter-spacing:.11em; text-transform:uppercase; color:var(--dr-txt-3); display:block}
-.kpi .v{font-family:var(--dr-mono); font-size:19px; font-weight:700; display:block; margin:3px 0 1px}
+.kpi .v{font-family:var(--dr-mono); font-size:19px; font-weight:700; display:block; margin:3px 0 1px; text-shadow:0 0 16px currentColor}
 .kpi .d{font-size:10.5px; color:var(--dr-txt-2)}
 .up{color:var(--dr-good)} .down{color:var(--dr-crit)} .flat{color:var(--dr-txt-3)}
 
@@ -180,13 +225,14 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
 /* ---------------- markets ---------------- */
 .mkts{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-bottom:13px}
 .mkt{
-  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2); border-radius:8px;
+  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2);
+  clip-path:polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
   padding:11px 12px; cursor:pointer; transition:.15s; text-align:left; width:100%; font:inherit; color:inherit;
 }
 .mkt:hover{border-color:var(--dr-line); transform:translateY(-1px)}
 .mkt.on{border-color:var(--dr-orange); background:rgba(255,115,0,.09)}
 .mkt .mn{font-size:11.5px; color:var(--dr-txt-2); display:flex; justify-content:space-between; align-items:center; gap:6px}
-.mkt .mv{font-family:var(--dr-mono); font-size:19px; font-weight:700; margin:4px 0 2px}
+.mkt .mv{font-family:var(--dr-mono); font-size:19px; font-weight:700; margin:4px 0 2px; text-shadow:0 0 16px rgba(255,255,255,.22)}
 .mkt .mc{font-family:var(--dr-mono); font-size:11.5px}
 .lean{
   font-family:var(--dr-mono); font-size:9px; font-weight:700; letter-spacing:.08em;
@@ -279,7 +325,7 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
       <span class="idx">01</span>
       <h2>廣告開支 <span class="sub">Marketing Ad Spend</span></h2>
     </div>
-    <div class="gauges" id="g1"></div>
+    <div class="dial" id="g1"></div>
     <div class="kpis" style="margin-top:14px">
       <div class="kpi"><span class="k">本月累計</span><span class="v">$46,820</span><span class="d up">▲ 12.4% 對上月</span></div>
       <div class="kpi"><span class="k">Cost / Lead</span><span class="v">$71.4</span><span class="d up">▼ 6.1% 更平</span></div>
@@ -298,7 +344,7 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
       <span class="idx">02</span>
       <h2>報名與出席漏斗 <span class="sub">Registration Funnel</span></h2>
       <div class="spacer"></div>
-      <div class="gauge" style="flex:0 0 auto"><div id="gconv"></div></div>
+      
     </div>
     <div class="kpis">
       <button class="kpi on" data-f="all"><span class="k">總報名</span><span class="v">564</span><span class="d">5 場 · 8 月</span></button>
@@ -306,7 +352,9 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
       <button class="kpi" data-f="noreply"><span class="k">未回覆</span><span class="v" style="color:var(--dr-noreply)">117</span><span class="d">20.7% 待跟進</span></button>
       <button class="kpi" data-f="rejected"><span class="k">拒絕出席</span><span class="v" style="color:var(--dr-rejected)">65</span><span class="d">11.5%</span></button>
     </div>
-    <div id="funnel"></div>
+    <div id="fbars"></div>
+    <div class="fstrip" id="fstrip"></div>
+    <div id="funnel" style="margin-top:12px"></div>
     <div class="basis">
       每條柱的總高度 = 該場總報名人數；三段是互斥的跟進結果，加起來等於總報名。段內數字是人數，確保色弱人士也能讀取。
     </div>
@@ -393,36 +441,63 @@ function tick(){
 }
 tick(); setInterval(tick,30000);
 
-/* ================= 01 · radial gauges ================= */
-function gauge(host,val,max,label,sub,colour){
-  var R=34,C=2*Math.PI*R,pct=Math.max(0,Math.min(1,val/max));
-  var d=document.createElement("div"); d.className="gauge";
-  var s=el("svg",{width:88,height:88,viewBox:"0 0 88 88",role:"img","aria-label":label+" "+Math.round(pct*100)+"%"});
-  s.appendChild(el("circle",{cx:44,cy:44,r:R,fill:"none",stroke:"rgba(255,255,255,.09)","stroke-width":7}));
-  var arc=el("circle",{cx:44,cy:44,r:R,fill:"none",stroke:colour,"stroke-width":7,"stroke-linecap":"round",
-    "stroke-dasharray":C,"stroke-dashoffset":C*(1-pct),transform:"rotate(-90 44 44)"});
-  arc.style.filter="drop-shadow(0 0 6px "+colour+"88)";
-  s.appendChild(arc);
-  for(var i=0;i<36;i++){
-    var a=i*10*Math.PI/180;
-    s.appendChild(el("line",{x1:44+Math.cos(a)*41,y1:44+Math.sin(a)*41,x2:44+Math.cos(a)*43.5,y2:44+Math.sin(a)*43.5,
-      stroke:"rgba(255,255,255,.14)","stroke-width":1}));
+/* ================= 01 · concentric HUD dial ================= */
+/* Nested arcs at different radii with segmented tick rings — the treatment in
+   Jackson's crop: rings outside, the money stacked in the core. */
+function ring(s,cx,cy,r,w,pct,colour,dashGap){
+  var C=2*Math.PI*r;
+  s.appendChild(el("circle",{cx:cx,cy:cy,r:r,fill:"none",stroke:"rgba(255,255,255,.07)","stroke-width":w,
+    "stroke-dasharray":dashGap||null}));
+  var a=el("circle",{cx:cx,cy:cy,r:r,fill:"none",stroke:colour,"stroke-width":w,"stroke-linecap":"butt",
+    "stroke-dasharray":(dashGap?dashGap:C+" "+C),"stroke-dashoffset":dashGap?null:C*(1-pct),
+    transform:"rotate(-90 "+cx+" "+cy+")"});
+  if(dashGap){ a.setAttribute("stroke-dasharray",dashGap);
+    a.setAttribute("clip-path","url(#cl"+Math.round(r)+")"); }
+  a.style.filter="drop-shadow(0 0 7px "+colour+"AA)";
+  s.appendChild(a); return a;
+}
+function ticks(s,cx,cy,r,n,len,colour,op){
+  for(var i=0;i<n;i++){
+    var t=i*(360/n)*Math.PI/180;
+    s.appendChild(el("line",{x1:cx+Math.cos(t)*r,y1:cy+Math.sin(t)*r,
+      x2:cx+Math.cos(t)*(r+len),y2:cy+Math.sin(t)*(r+len),
+      stroke:colour,"stroke-width":1,opacity:op||.34}));
   }
-  d.appendChild(s);
-  var v=document.createElement("div"); v.className="gv"; v.style.color=colour; v.textContent=Math.round(pct*100)+"%";
-  d.appendChild(v);
-  var l=document.createElement("div"); l.className="gl"; l.textContent=label; d.appendChild(l);
-  var sb=document.createElement("div"); sb.className="gs"; sb.textContent=sub; d.appendChild(sb);
-  host.appendChild(d);
+}
+function arcPath(cx,cy,r,a0,a1){
+  var p=function(a){a=a*Math.PI/180;return [cx+Math.cos(a)*r,cy+Math.sin(a)*r];};
+  var s0=p(a0),s1=p(a1),large=(a1-a0)>180?1:0;
+  return "M"+s0[0].toFixed(1)+" "+s0[1].toFixed(1)+"A"+r+" "+r+" 0 "+large+" 1 "+s1[0].toFixed(1)+" "+s1[1].toFixed(1);
+}
+function segArc(s,cx,cy,r,w,frac,colour,startDeg){
+  var a0=startDeg||-90, a1=a0+360*Math.max(0,Math.min(1,frac));
+  s.appendChild(el("path",{d:arcPath(cx,cy,r,a0,a0+359.9),fill:"none",stroke:"rgba(255,255,255,.07)","stroke-width":w}));
+  if(frac<=0) return;
+  var a=el("path",{d:arcPath(cx,cy,r,a0,a1),fill:"none",stroke:colour,"stroke-width":w,"stroke-linecap":"round"});
+  a.style.filter="drop-shadow(0 0 8px "+colour+"CC)"; s.appendChild(a);
+}
+function bigDial(host,rings,core){
+  host.innerHTML="";
+  var S=210,cx=S/2,cy=S/2;
+  var s=el("svg",{width:S,height:S,viewBox:"0 0 "+S+" "+S,role:"img","aria-label":"廣告開支與信用卡額度（示範數據）"});
+  ticks(s,cx,cy,99,72,5,"#FF7300",.28);
+  ticks(s,cx,cy,88,24,7,"rgba(255,255,255,.5)",.30);
+  rings.forEach(function(r){ segArc(s,cx,cy,r.r,r.w,r.f,r.c,r.start); });
+  s.appendChild(el("circle",{cx:cx,cy:cy,r:44,fill:"rgba(6,14,26,.72)",stroke:"rgba(255,255,255,.10)"}));
+  host.appendChild(s);
+  var d=document.createElement("div"); d.className="core";
+  d.innerHTML=core; host.appendChild(d);
 }
 var g1=$("#g1");
 if(g1){
-  gauge(g1,46820,60000,"預算用量","$46,820 / $60,000","#FF7300");
-  gauge(g1,52400,80000,"信用卡額度","$52,400 / $80,000","#F4AA29");
-  gauge(g1,656,900,"Lead 目標","656 / 900","#3FC9D6");
+  bigDial(g1,[
+    {r:78,w:9,f:46820/60000,c:"#FF7300"},
+    {r:64,w:7,f:52400/80000,c:"#F4AA29"},
+    {r:52,w:5,f:656/900,c:"#2E9BE8"}
+  ],
+   '<div class="cl">信用卡已用</div><div class="cv">$52,400</div>'+
+   '<div class="cl">可用額度</div><div class="cv sm">$27,600</div>');
 }
-var gc=$("#gconv");
-if(gc){ gauge(gc,382,564,"確認轉化","382 / 564","#14A5B8"); }
 
 /* ================= 01 · spend line ================= */
 var SPEND=[1180,1420,1650,980,1240,1890,2140,1760,1320,1080,1540,1980,2280,1840,1460,1220,1700,2050,2380,1920,1580,1340,1760,2160,2420,1880,1520,1280,1640,2010];
@@ -500,10 +575,50 @@ function drawFunnel(){
   });
   h.appendChild(s);
 }
+/* ---- horizontal glow funnel (Jackson's crop) ---- */
+var TOT={reg:564,confirmed:382,noreply:117,rejected:65};
+function drawFBars(){
+  var h=$("#fbars"); if(!h) return; h.innerHTML="";
+  var rows=[
+    {k:"all",       ic:"\u25C9", l:"REGISTERED", v:TOT.reg,       c:"#BFE6FF"},
+    {k:"confirmed", ic:"\u2713", l:"CONFIRMED",  v:TOT.confirmed, c:"#14A5B8"},
+    {k:"noreply",   ic:"\u2709", l:"NO REPLY",   v:TOT.noreply,   c:"#7A68D8"},
+    {k:"rejected",  ic:"\u2715", l:"REJECTED",   v:TOT.rejected,  c:"#D33B4C"}
+  ];
+  rows.forEach(function(r){
+    var pct=r.v/TOT.reg, dim=(FKEY!=="all"&&FKEY!==r.k&&r.k!=="all");
+    var d=document.createElement("div"); d.className="fbar";
+    d.innerHTML='<span class="ic" aria-hidden="true">'+r.ic+'</span>'+
+      '<span class="fl">'+r.l+'</span>'+
+      '<span class="tr"><span class="fi" style="width:'+(pct*100).toFixed(1)+'%;'+
+        'background:linear-gradient(90deg, '+r.c+'33, '+r.c+'CC);box-shadow:0 0 18px '+r.c+'88;'+
+        (dim?"opacity:.22;":"")+'"></span></span>'+
+      '<span class="fv" style="color:'+r.c+(dim?";opacity:.35":"")+'">'+r.v+'</span>'+
+      '<span class="fp">'+(pct*100).toFixed(1)+'%</span>';
+    h.appendChild(d);
+  });
+  var st=$("#fstrip"); if(!st) return; st.innerHTML="";
+  var dial=document.createElement("div"); dial.className="dial"; dial.style.margin="0";
+  st.appendChild(dial);
+  var S=76,cx=S/2,cy=S/2;
+  var sv=el("svg",{width:S,height:S,viewBox:"0 0 "+S+" "+S,role:"img","aria-label":"確認轉化 67.7%"});
+  ticks(sv,cx,cy,34,36,4,"#2E9BE8",.3);
+  segArc(sv,cx,cy,27,6,TOT.confirmed/TOT.reg,"#F4AA29");
+  dial.appendChild(sv);
+  var core=document.createElement("div"); core.className="core";
+  core.innerHTML='<div class="cv sm" style="margin:0;color:#F4AA29">67.7%</div>';
+  dial.appendChild(core);
+  [["CONVERSION RATE","67.7%","#F4AA29"],["SHOW RATE","79.4%","#14A5B8"],["NO-SHOW RATE","20.6%","#D33B4C"]]
+    .forEach(function(c){
+      var e=document.createElement("div"); e.className="fcell";
+      e.innerHTML='<span class="k">'+c[0]+'</span><span class="v" style="color:'+c[2]+'">'+c[1]+'</span>';
+      st.appendChild(e);
+    });
+}
 $$(".kpi[data-f]").forEach(function(b){
   b.addEventListener("click",function(){
     $$(".kpi[data-f]").forEach(function(o){o.classList.remove("on");});
-    b.classList.add("on"); FKEY=b.getAttribute("data-f"); drawFunnel();
+    b.classList.add("on"); FKEY=b.getAttribute("data-f"); drawFunnel(); drawFBars();
   });
 });
 
@@ -683,9 +798,9 @@ if("IntersectionObserver" in window){
 }
 
 /* ================= boot ================= */
-function boot(){ drawSpend(); drawFunnel(); drawTasks(); drawPay(); drawMkts(); drawFeed(); }
+function boot(){ drawSpend(); drawFBars(); drawFunnel(); drawTasks(); drawPay(); drawMkts(); drawFeed(); }
 boot();
-var rt; addEventListener("resize",function(){ clearTimeout(rt); rt=setTimeout(function(){ drawSpend(); drawFunnel(); },140); });
+var rt; addEventListener("resize",function(){ clearTimeout(rt); rt=setTimeout(function(){ drawSpend(); drawFBars(); drawFunnel(); },140); });
 })();
 </script>
 </body>
