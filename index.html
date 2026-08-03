@@ -28,12 +28,27 @@ body{
   font-family:var(--dr-tc); font-size:14px; line-height:1.6;
   -webkit-font-smoothing:antialiased; overflow-x:hidden;
 }
+/* the lit field the glass panels sit ON — without this, translucency has nothing to reveal */
 body::before{
   content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
   background:
-    radial-gradient(1100px 620px at 50% -12%, rgba(255,115,0,.13), transparent 62%),
-    radial-gradient(760px 460px at 8% 104%, rgba(63,201,214,.07), transparent 62%),
-    repeating-linear-gradient(0deg, rgba(255,255,255,.016) 0 1px, transparent 1px 3px);
+    radial-gradient(1200px 700px at 50% -12%, rgba(255,140,30,.52), transparent 66%),
+    radial-gradient(900px 620px at 4% 22%, rgba(46,155,232,.38), transparent 64%),
+    radial-gradient(860px 560px at 98% 34%, rgba(244,170,41,.20), transparent 62%),
+    radial-gradient(940px 660px at 20% 100%, rgba(63,201,214,.30), transparent 64%),
+    radial-gradient(800px 560px at 90% 92%, rgba(255,115,0,.28), transparent 64%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.020) 0 1px, transparent 1px 3px);
+}
+/* slow light drift, so the field reads as lighting rather than a printed gradient */
+body::after{
+  content:""; position:fixed; z-index:0; pointer-events:none;
+  width:70vw; height:70vw; left:12%; top:6%;
+  background:radial-gradient(circle, rgba(255,115,0,.13), transparent 62%);
+  filter:blur(46px); animation:drift 34s ease-in-out infinite alternate;
+}
+@keyframes drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  100%{transform:translate3d(9vw,7vh,0) scale(1.16)}
 }
 .wrap{position:relative; z-index:1; max-width:1680px; margin:0 auto; padding:0 20px 56px}
 .num{font-family:var(--dr-mono); font-variant-numeric:tabular-nums}
@@ -43,8 +58,9 @@ body::before{
 .bar{
   position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:18px;
   padding:12px 18px; margin:0 -20px 18px; flex-wrap:wrap;
-  background:linear-gradient(180deg, rgba(7,12,22,.97), rgba(7,12,22,.86));
-  backdrop-filter:blur(10px);
+  background:linear-gradient(180deg, rgba(10,18,32,.66), rgba(10,18,32,.42));
+  backdrop-filter:blur(24px) saturate(140%);
+  -webkit-backdrop-filter:blur(24px) saturate(140%);
   border-bottom:1px solid var(--dr-line);
   box-shadow:0 1px 0 rgba(255,115,0,.10), 0 14px 34px -22px #000;
 }
@@ -82,7 +98,9 @@ body::before{
 .banner{
   display:flex; gap:11px; align-items:flex-start; padding:11px 15px; margin-bottom:18px;
   border:1px solid rgba(244,170,41,.3); border-left:3px solid var(--dr-amber);
-  background:linear-gradient(90deg, rgba(244,170,41,.10), rgba(244,170,41,.02));
+  background:linear-gradient(90deg, rgba(244,170,41,.16), rgba(244,170,41,.03));
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13);
   border-radius:5px; font-size:12.5px; color:#EBD9B4;
 }
 .banner b{color:var(--dr-sun)}
@@ -91,16 +109,30 @@ body::before{
 .grid{display:grid; gap:16px; grid-template-columns:repeat(12,1fr)}
 .hud{
   position:relative; grid-column:span 12; --acc:var(--dr-orange);
-  background:linear-gradient(165deg, var(--dr-panel), var(--dr-deep) 62%);
+  /* GLASS: sheen layer + translucent shell + blur, so the lit field bleeds through */
+  background:
+    linear-gradient(148deg, rgba(255,255,255,.15), rgba(255,255,255,.02) 30%, transparent 55%),
+    linear-gradient(165deg, rgba(52,84,140,.40), rgba(12,22,42,.28) 58%, rgba(10,18,32,.34));
+  backdrop-filter:blur(26px) saturate(150%) brightness(1.12);
+  -webkit-backdrop-filter:blur(26px) saturate(150%) brightness(1.12);
   padding:17px 18px 18px;
   clip-path:polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 20px 44px -30px #000;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -40px 60px -50px var(--acc),
+    0 20px 44px -30px #000,
+    0 0 70px -34px var(--acc);
+}
+/* no backdrop-filter (older browsers) — fall back to near-solid rather than unreadable */
+@supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+  .hud{background:linear-gradient(165deg, var(--dr-panel), var(--dr-deep) 62%)}
+  .bar{background:linear-gradient(180deg, rgba(7,12,22,.98), rgba(7,12,22,.94))}
 }
 /* continuous thin glow border, drawn as a clipped ring so the chamfer is followed */
 .hud::before{
   content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
-  background:linear-gradient(150deg, var(--acc), rgba(255,255,255,.16) 32%, transparent 58%, var(--acc));
-  opacity:.55;
+  background:linear-gradient(150deg, var(--acc), rgba(255,255,255,.42) 32%, transparent 58%, var(--acc));
+  opacity:.72;
   clip-path:polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px,
     18px 0, 18px 1.2px, 1.2px 18.6px, 1.2px calc(100% - 1.2px), calc(100% - 18.6px) calc(100% - 1.2px),
     calc(100% - 1.2px) calc(100% - 18.6px), calc(100% - 1.2px) 1.2px, 18px 1.2px);
@@ -153,7 +185,7 @@ body::before{
   clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%);
 }
 .fbar .fl{font-family:var(--dr-mono); font-size:10px; letter-spacing:.11em; text-transform:uppercase; color:var(--dr-txt-2); width:88px; flex-shrink:0}
-.fbar .tr{flex:1; height:22px; background:rgba(255,255,255,.04); border:1px solid var(--dr-line2); position:relative; overflow:hidden; min-width:40px}
+.fbar .tr{flex:1; height:22px; background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.02)); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); border:1px solid var(--dr-line2); position:relative; overflow:hidden; min-width:40px}
 .fbar .fi{
   position:absolute; inset:0 auto 0 0; height:100%;
   background:linear-gradient(90deg, rgba(46,155,232,.20), rgba(46,155,232,.75));
@@ -170,7 +202,9 @@ body::before{
 /* ---------------- kpi ---------------- */
 .kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:9px; margin-bottom:14px}
 .kpi{
-  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2);
+  background:linear-gradient(158deg, rgba(255,255,255,.115), rgba(255,255,255,.028) 58%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  border:1px solid var(--dr-line2);
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
   padding:10px 11px; cursor:pointer; transition:.15s; text-align:left;
 }
@@ -186,7 +220,8 @@ body::before{
 .tab{
   font-family:var(--dr-mono); font-size:10.5px; font-weight:600; letter-spacing:.09em;
   padding:6px 13px; border-radius:4px; cursor:pointer; text-transform:uppercase;
-  background:rgba(255,255,255,.04); border:1px solid var(--dr-line2); color:var(--dr-txt-3); transition:.14s;
+  background:linear-gradient(158deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+  border:1px solid var(--dr-line2); color:var(--dr-txt-3); transition:.14s;
 }
 .tab:hover{color:var(--dr-txt-2)}
 .tab.on{background:rgba(255,115,0,.13); border-color:var(--dr-line); color:var(--dr-orange)}
@@ -225,7 +260,9 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
 /* ---------------- markets ---------------- */
 .mkts{display:grid; grid-template-columns:repeat(auto-fit,minmax(178px,1fr)); gap:10px; margin-bottom:13px}
 .mkt{
-  background:rgba(255,255,255,.032); border:1px solid var(--dr-line2);
+  background:linear-gradient(158deg, rgba(255,255,255,.115), rgba(255,255,255,.028) 58%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16);
+  border:1px solid var(--dr-line2);
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
   padding:11px 12px; cursor:pointer; transition:.15s; text-align:left; width:100%; font:inherit; color:inherit;
 }
@@ -249,7 +286,10 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
 .notice{
   display:flex; gap:9px; align-items:center; padding:9px 13px; margin-bottom:13px;
   border:1px solid rgba(63,201,214,.28); border-left:3px solid var(--dr-cyan);
-  background:rgba(63,201,214,.06); border-radius:5px; font-size:12px; color:#BEE7EC;
+  background:linear-gradient(90deg, rgba(63,201,214,.14), rgba(63,201,214,.03));
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  border-radius:5px; font-size:12px; color:#BEE7EC;
 }
 .feed{max-height:290px; overflow-y:auto; padding-right:5px}
 .feed::-webkit-scrollbar{width:5px}
