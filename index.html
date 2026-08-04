@@ -16,8 +16,10 @@
   --dr-glow:rgba(255,115,0,.40); --dr-glow-soft:rgba(255,115,0,.13);
   --dr-txt:#EFEBE4; --dr-txt-2:#A9B4C6; --dr-txt-3:#6E7C93;
   --dr-cyan:#3FC9D6;
-  --dr-good:#14A5B8; --dr-warn:#C98A1E; --dr-crit:#D33B4C; --dr-idle:#6E7C93;
-  --dr-confirmed:#14A5B8; --dr-noreply:#7A68D8; --dr-rejected:#D33B4C;
+  --dr-good:#3FC9D6; --dr-warn:#F4AA29; --dr-crit:#E2495B; --dr-idle:#6E7C93;
+  /* HUD readout palette — cyan = good, amber = waiting, red = lost. No fourth hue:
+     the purple that sat on 未回覆 belonged to no reference image and read as decoration. */
+  --dr-confirmed:#3FC9D6; --dr-noreply:#F4AA29; --dr-rejected:#E2495B;
   --dr-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --dr-tc:"Noto Sans TC","PingFang HK","Hiragino Sans CNS",sans-serif;
 }
@@ -210,6 +212,10 @@ body::after{
   border:1px solid var(--dr-line2);
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
   padding:10px 11px; cursor:pointer; transition:.15s; text-align:left;
+  /* half these tiles are <button>, which does NOT inherit body colour — it takes the UA
+     `buttontext`, i.e. BLACK. The tiles carrying an inline colour hid it; the two selected
+     ones (總報名, 全部) rendered a black number with a black glow on dark glass. */
+  color:var(--dr-txt);
 }
 .kpi:hover{border-color:var(--dr-line); background:rgba(255,115,0,.07); transform:translateY(-1px)}
 .kpi.on{border-color:var(--dr-orange); background:rgba(255,115,0,.11)}
@@ -601,7 +607,7 @@ function drawFunnel(){
   var bw=iw/SESS.length, bar=Math.min(46,bw*.52);
   SESS.forEach(function(d,i){
     var x=P.l+bw*i+(bw-bar)/2, y=P.t+ih, segs=[
-      {k:"confirmed",v:d.c,c:"#14A5B8"},{k:"noreply",v:d.x,c:"#7A68D8"},{k:"rejected",v:d.r,c:"#D33B4C"}
+      {k:"confirmed",v:d.c,c:"#3FC9D6"},{k:"noreply",v:d.x,c:"#F4AA29"},{k:"rejected",v:d.r,c:"#E2495B"}
     ];
     segs.forEach(function(sg){
       var hh=ih*sg.v/max; y-=hh;
@@ -613,7 +619,9 @@ function drawFunnel(){
         tx.textContent=sg.v; s.appendChild(tx);
       }
     });
-    var tt=el("text",{x:x+bar/2,y:P.t+ih-ih*(d.c+d.r+d.x)/max-6,fill:"#F4AA29","font-size":"10","font-weight":"700","text-anchor":"middle","font-family":"JetBrains Mono, monospace"});
+    /* total-per-session label: ice, matching REGISTERED in the funnel. It was amber, which
+       now reads as the label of the amber 未回覆 segment sitting right under it. */
+    var tt=el("text",{x:x+bar/2,y:P.t+ih-ih*(d.c+d.r+d.x)/max-6,fill:"#BFE6FF","font-size":"10","font-weight":"700","text-anchor":"middle","font-family":"JetBrains Mono, monospace"});
     tt.textContent=d.c+d.r+d.x; s.appendChild(tt);
     var n1=el("text",{x:x+bar/2,y:H-22,fill:"#A9B4C6","font-size":"9.5","text-anchor":"middle"});
     n1.textContent=d.n.length>9?d.n.slice(0,8)+"…":d.n; s.appendChild(n1);
@@ -628,9 +636,9 @@ function drawFBars(){
   var h=$("#fbars"); if(!h) return; h.innerHTML="";
   var rows=[
     {k:"all",       ic:"\u25C9", l:"REGISTERED", v:TOT.reg,       c:"#BFE6FF"},
-    {k:"confirmed", ic:"\u2713", l:"CONFIRMED",  v:TOT.confirmed, c:"#14A5B8"},
-    {k:"noreply",   ic:"\u2709", l:"NO REPLY",   v:TOT.noreply,   c:"#7A68D8"},
-    {k:"rejected",  ic:"\u2715", l:"REJECTED",   v:TOT.rejected,  c:"#D33B4C"}
+    {k:"confirmed", ic:"\u2713", l:"CONFIRMED",  v:TOT.confirmed, c:"#3FC9D6"},
+    {k:"noreply",   ic:"\u2709", l:"NO REPLY",   v:TOT.noreply,   c:"#F4AA29"},
+    {k:"rejected",  ic:"\u2715", l:"REJECTED",   v:TOT.rejected,  c:"#E2495B"}
   ];
   rows.forEach(function(r){
     var pct=r.v/TOT.reg, dim=(FKEY!=="all"&&FKEY!==r.k&&r.k!=="all");
@@ -655,7 +663,7 @@ function drawFBars(){
   var core=document.createElement("div"); core.className="core";
   core.innerHTML='<div class="cv sm" style="margin:0;color:#F4AA29">67.7%</div>';
   dial.appendChild(core);
-  [["CONVERSION RATE","67.7%","#F4AA29"],["SHOW RATE","79.4%","#14A5B8"],["NO-SHOW RATE","20.6%","#D33B4C"]]
+  [["CONVERSION RATE","67.7%","#F4AA29"],["SHOW RATE","79.4%","#3FC9D6"],["NO-SHOW RATE","20.6%","#E2495B"]]
     .forEach(function(c){
       var e=document.createElement("div"); e.className="fcell";
       e.innerHTML='<span class="k">'+c[0]+'</span><span class="v" style="color:'+c[2]+'">'+c[1]+'</span>';
