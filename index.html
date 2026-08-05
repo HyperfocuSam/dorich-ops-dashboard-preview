@@ -55,6 +55,17 @@ body::after{
 .wrap{position:relative; z-index:1; max-width:1680px; margin:0 auto; padding:0 20px 56px}
 .num{font-family:var(--dr-mono); font-variant-numeric:tabular-nums}
 .eyebrow{font-family:var(--dr-mono); font-size:10px; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--dr-txt-3)}
+.mkt-refresh{
+  font-family:var(--dr-mono); font-size:10px; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; cursor:pointer;
+  padding:6px 12px; border-radius:999px;
+  border:1px solid var(--dr-line); background:rgba(46,155,232,.12);
+  color:var(--dr-txt-2); transition:background .15s,color .15s,opacity .15s;
+}
+.mkt-refresh:hover:not(:disabled){background:rgba(46,155,232,.22); color:var(--dr-txt)}
+.mkt-refresh:disabled{opacity:.45; cursor:not-allowed}
+.mkt-refresh.busy{opacity:.7}
+
 
 /* ---------------- top command bar ---------------- */
 .bar{
@@ -452,7 +463,8 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
       <span class="idx">05</span>
       <h2>環球市場與新聞 <span class="sub">Global Markets News</span></h2>
       <div class="spacer"></div>
-      <span class="eyebrow">報價載入中…</span>
+      <span class="eyebrow" id="mkt-eyebrow">報價載入中…</span>
+      <button type="button" class="mkt-refresh" id="mkt-refresh" title="從市場來源重新拉取（最少相隔 5 分鐘）">更新報價</button>
     </div>
     <div class="notice">
       <span>◎</span>
@@ -789,7 +801,7 @@ function applyMarketPayload(data){
       tag:n.tag||"", tone:n.tone||"", url:n.url||""
     };
   });
-  var eye=document.querySelector("#m05 .eyebrow");
+  var eye=document.getElementById("mkt-eyebrow") || document.querySelector("#m05 .eyebrow");
   if(eye){
     var label=data.asOf ? ("報價更新 · "+fmtAsOf(data.asOf)) : ("報價更新 · "+(data.forDate||""));
     if(data.quotes && data.quotes[0] && data.quotes[0].source) label+=" · "+data.quotes[0].source;
@@ -861,33 +873,104 @@ $$(".tab[data-n]").forEach(function(t){
   });
 });
 
-function loadMarkets(){
+var MKT_COOLDOWN_MS=5*60*1000; // client + server both enforce 5 min
+var MKT_LS_KEY="dorich_market_refresh_at";
+var mktRefreshTimer=null;
+
+function mktCooldownLeftMs(){
+  try{
+    var t=Number(localStorage.getItem(MKT_LS_KEY)||0);
+    return Math.max(0, t+MKT_COOLDOWN_MS-Date.now());
+  }catch(e){ return 0; }
+}
+function mktMarkRefreshed(){
+  try{ localStorage.setItem(MKT_LS_KEY, String(Date.now())); }catch(e){}
+}
+function mktUpdateRefreshBtn(busy){
+  var btn=document.getElementById("mkt-refresh");
+  if(!btn) return;
+  var left=mktCooldownLeftMs();
+  if(busy){
+    btn.disabled=true;
+    btn.classList.add("busy");
+    btn.textContent="更新中…";
+    return;
+  }
+  btn.classList.remove("busy");
+  if(left>0){
+    btn.disabled=true;
+    var s=Math.ceil(left/1000);
+    var m=Math.floor(s/60), r=s%60;
+    btn.textContent=m>0 ? ("請等 "+m+":"+(r<10?"0":"")+r) : ("請等 "+s+"s");
+  }else{
+    btn.disabled=false;
+    btn.textContent="更新報價";
+  }
+}
+function mktTickCooldown(){
+  mktUpdateRefreshBtn(false);
+  if(mktCooldownLeftMs()>0){
+    mktRefreshTimer=setTimeout(mktTickCooldown, 1000);
+  }
+}
+
+function loadMarkets(force){
+  force=!!force;
+  if(force && mktCooldownLeftMs()>0){
+    mktUpdateRefreshBtn(false);
+    return;
+  }
   MARKET_STATUS="loading";
+  if(force) mktUpdateRefreshBtn(true);
   drawMkts(); drawFeed();
-  // session cache while network runs
   try{
     var cached=sessionStorage.getItem("dorich_market_payload");
     if(cached) applyMarketPayload(JSON.parse(cached));
   }catch(e){}
   drawMkts(); drawFeed();
-  fetch(MARKET_API, { credentials:"omit", cache:"no-store" })
+  var url=MARKET_API+(force ? (MARKET_API.indexOf("?")>=0?"&":"?")+"refresh=1" : "");
+  fetch(url, { credentials:"omit", cache:"no-store" })
     .then(function(r){
       if(!r.ok) throw new Error("HTTP "+r.status);
       return r.json();
     })
     .then(function(data){
       if(!applyMarketPayload(data)) throw new Error("empty payload");
+      // Server may have throttled; honour retryAfterSec if present
+      var ref=data.refresh||{};
+      if(force){
+        if(ref.forced){
+          mktMarkRefreshed();
+        }else if(ref.retryAfterSec>0){
+          // Align client cooldown to server remaining window
+          try{
+            var remain=ref.retryAfterSec*1000;
+            localStorage.setItem(MKT_LS_KEY, String(Date.now()-(MKT_COOLDOWN_MS-remain)));
+          }catch(e){}
+        }else{
+          mktMarkRefreshed();
+        }
+      }
       drawMkts(); drawFeed();
+      mktUpdateRefreshBtn(false);
+      mktTickCooldown();
     })
     .catch(function(err){
       console.warn("[market] fetch failed", err);
       if(!MKT.length) MARKET_STATUS="error";
       drawMkts(); drawFeed();
+      mktUpdateRefreshBtn(false);
+      mktTickCooldown();
     });
 }
-loadMarkets();
-// Re-poll every 15 minutes while the tab is open (matches the server job).
-setInterval(loadMarkets, 15*60*1000);
+var btn=document.getElementById("mkt-refresh");
+if(btn){
+  btn.addEventListener("click", function(){ loadMarkets(true); });
+  mktTickCooldown();
+}
+loadMarkets(false);
+// Background re-poll every 15 minutes (read-only, does not burn the 5-min force budget).
+setInterval(function(){ loadMarkets(false); }, 15*60*1000);
 
 /* ================= search ================= */
 var q=$("#q");
