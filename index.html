@@ -452,7 +452,7 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
       <span class="idx">05</span>
       <h2>環球市場與新聞 <span class="sub">Global Markets News</span></h2>
       <div class="spacer"></div>
-      <span class="eyebrow">報價更新 · 2026-08-05 09:38 HKT</span>
+      <span class="eyebrow">報價載入中…</span>
     </div>
     <div class="notice">
       <span>◎</span>
@@ -471,7 +471,7 @@ tbody tr:hover{background:rgba(255,115,0,.05)}
 
 <div class="foot">
   <span>DoRich Group Limited</span>
-  <span>· 市場報價 live · 其餘示範數據</span>
+  <span>· 市場報價 auto · 其餘示範數據</span>
   <span>· 版面 <span id="stamp">2026-08-05</span></span>
   <span style="margin-left:auto">Ada · Adaptig</span>
 </div>
@@ -753,40 +753,67 @@ $$(".kpi[data-p]").forEach(function(b){
 });
 
 /* ================= 05 · markets + sentiment ================= */
-/* Every lean carries its basis: which headlines, whose view, how counted. */
-var MKT=[
- {id:"hsi", n:"恒生指數", en:"Hang Seng", v:"25,890.99", u:"HKD", ch:"+0.03%", up:1,
-  lean:"偏好", lk:"up", bull:7, bear:2, neu:3,
-  who:"AAStocks 早段報道內銀股造好帶動大市", hist:"過往人民幣同日創新高之後，恒指五次有四次收升"},
- {id:"spx", n:"標普 500", en:"S&P 500", v:"7,736.52", u:"USD", ch:"+1.79%", up:1,
-  lean:"偏好", lk:"up", bull:6, bear:3, neu:4,
-  who:"Bloomberg：科技股業績勝預期帶動收市造好", hist:"消費者信心終值高於預期後，標普一週內多數走高"},
- {id:"ndx", n:"納斯達克", en:"Nasdaq", v:"26,584.99", u:"USD", ch:"+2.59%", up:1,
-  lean:"偏好", lk:"up", bull:5, bear:4, neu:3,
-  who:"路透：指數權重分散，單一重磅股未拖垮大市", hist:"單一成份股急跌逾 9% 而指數仍升，屬分散效應"},
- {id:"xau", n:"現貨金", en:"Gold spot", v:"4,139.3", u:"USD", ch:"+2.62%", up:1,
-  lean:"中性", lk:"fl", bull:3, bear:3, neu:6,
-  who:"Kitco：金價企穩，未見與今日新聞直接對應的觸發點", hist:"美元回軟期間金價通常偏好，但今日消息面淡靜"}
-];
-var NEWS=[
- {t:"28 分鐘前",s:"Investing.com",h:"WestJet starts parking Boeing 737 jets ahead of looming labor strike",tag:"標普 500",tone:"偏淡"},
- {t:"31 分鐘前",s:"Investing.com",h:"Integer Holdings stock surges 21% on KKR takeover report",tag:"標普 500",tone:"偏好"},
- {t:"40 分鐘前",s:"Investing.com",h:"Canada stocks fall as gold slump hits miners despite stronger-than-expected GDP",tag:"現貨金",tone:"偏淡"},
- {t:"47 分鐘前",s:"Investing.com",h:"Microsoft tests $462 double top with RSI at 76: Live levels",tag:"納斯達克",tone:"偏好"},
- {t:"49 分鐘前",s:"MarketWatch",h:"Supply-chain legend Tim Cook finally meets his match with Apple's memory crunch",tag:"納斯達克",tone:"偏淡"},
- {t:"1 小時前",s:"MarketWatch",h:"AI stocks may have bottomed out. What investors should watch for next.",tag:"納斯達克",tone:"偏好"},
- {t:"3 小時前",s:"CNBC Markets",h:"As Warsh's Fed faces pressure to act on inflation, these indicators show it's at its lowest in years",tag:"標普 500",tone:"偏好"},
- {t:"5 小時前",s:"RTHK 財經",h:"美國密歇根大學 7 月消費者信心指數終值高於預期",tag:"標普 500",tone:"偏好"},
- {t:"6 小時前",s:"RTHK 財經",h:"道指初段升逾 230 點　納指升 1%　蘋果急挫逾 9%",tag:"納斯達克",tone:"偏好"},
- {t:"7 小時前",s:"RTHK 財經",h:"迪生創建前主席潘迪生內幕交易罪成",tag:"恒生指數",tone:"偏淡"},
- {t:"9 小時前",s:"AAStocks",h:"恒指早段高開　內銀股造好帶動大市　成交較上日增加",tag:"恒生指數",tone:"偏好"},
- {t:"11 小時前",s:"Kitco",h:"金價於美元回軟下企穩每盎司 2,380 美元上方，連續第三日上升",tag:"現貨金",tone:"偏好"},
- {t:"12 小時前",s:"Bloomberg",h:"科技股業績勝預期帶動標普 500 收市造好，半導體板塊領漲",tag:"標普 500",tone:"偏好"},
- {t:"14 小時前",s:"Reuters",h:"聯儲局會議紀錄顯示對減息步伐取態審慎，市場預期九月維持不變",tag:"標普 500",tone:"中性"}
-];
+/* Live feed: GET /api/market/public/latest on the ops-os host.
+   Fallback: last successful payload in sessionStorage; then empty state. */
+var MARKET_API = (window.DORICH_MARKET_API || "https://dorich-ops-os-production.up.railway.app/api/market/public/latest");
+var MKT=[];
+var NEWS=[];
 var MSEL=null, NTONE="all";
+var MARKET_STATUS="loading";
+
+function fmtAsOf(iso){
+  if(!iso) return "—";
+  try{
+    var d=new Date(iso);
+    var u=d.getTime()+d.getTimezoneOffset()*6e4;
+    var hk=new Date(u+288e5);
+    var p=function(n){return n<10?"0"+n:""+n;};
+    return hk.getFullYear()+"-"+p(hk.getMonth()+1)+"-"+p(hk.getDate())+" "+p(hk.getHours())+":"+p(hk.getMinutes())+" HKT";
+  }catch(e){ return String(iso); }
+}
+
+function applyMarketPayload(data){
+  if(!data || !data.quotes) return false;
+  MKT=(data.quotes||[]).map(function(q){
+    return {
+      id:q.id, n:q.nameZh||q.name, en:q.nameEn||"", v:q.priceDisplay||String(q.price),
+      u:q.currency||"", ch:q.changeDisplay||"—", up:q.up!==false,
+      lean:q.lean||"中性", lk:q.leanKey||"fl",
+      bull:q.bull||0, bear:q.bear||0, neu:q.neu||0,
+      who:q.who||"", hist:q.hist||""
+    };
+  });
+  NEWS=(data.news||[]).map(function(n){
+    return {
+      t:n.age||"—", s:n.source||"", h:n.headline||"",
+      tag:n.tag||"", tone:n.tone||"", url:n.url||""
+    };
+  });
+  var eye=document.querySelector("#m05 .eyebrow");
+  if(eye){
+    var label=data.asOf ? ("報價更新 · "+fmtAsOf(data.asOf)) : ("報價更新 · "+(data.forDate||""));
+    if(data.quotes && data.quotes[0] && data.quotes[0].source) label+=" · "+data.quotes[0].source;
+    eye.textContent=label;
+  }
+  MARKET_STATUS="ok";
+  try{ sessionStorage.setItem("dorich_market_payload", JSON.stringify(data)); }catch(e){}
+  return true;
+}
+
 function drawMkts(){
   var h=$("#mkts"); if(!h) return; h.innerHTML="";
+  if(MARKET_STATUS==="loading" && !MKT.length){
+    h.innerHTML='<div class="empty">正在載入即時報價…</div>';
+    return;
+  }
+  if(MARKET_STATUS==="error" && !MKT.length){
+    h.innerHTML='<div class="empty">報價暫時未能更新，請稍後 refresh</div>';
+    return;
+  }
+  if(!MKT.length){
+    h.innerHTML='<div class="empty">暫無報價</div>';
+    return;
+  }
   MKT.forEach(function(m){
     var b=document.createElement("button");
     b.className="mkt"+(MSEL===m.n?" on":""); b.type="button";
@@ -796,9 +823,11 @@ function drawMkts(){
       '<div class="mv">'+esc(m.v)+' <span style="font-size:9.5px;color:var(--dr-txt-3)">'+esc(m.u)+'</span></div>'+
       '<div class="mc '+(m.up?"up":"down")+'">'+(m.up?"▲":"▼")+" "+esc(m.ch)+'</div>'+
       '<div class="basis">'+
-        '<b>如何計算：</b>今日 '+(m.bull+m.bear+m.neu)+' 條相關新聞 — 偏好 '+m.bull+'、偏淡 '+m.bear+'、中性 '+m.neu+'<br>'+
+        (m.bull+m.bear+m.neu
+          ? ('<b>如何計算：</b>今日 '+(m.bull+m.bear+m.neu)+' 條相關新聞 — 偏好 '+m.bull+'、偏淡 '+m.bear+'、中性 '+m.neu+'<br>')
+          : '<b>偏向：</b>暫未計入新聞情緒（報價為即時）<br>')+
         '<b>誰說：</b>'+esc(m.who)+'<br>'+
-        '<b>歷史：</b>'+esc(m.hist)+
+        '<b>基準：</b>'+esc(m.hist)+
       '</div>';
     b.addEventListener("click",function(){ MSEL = (MSEL===m.n)?null:m.n; drawMkts(); drawFeed(); });
     h.appendChild(b);
@@ -806,14 +835,22 @@ function drawMkts(){
 }
 function drawFeed(){
   var h=$("#feed"); if(!h) return; h.innerHTML="";
+  if(MARKET_STATUS==="loading" && !NEWS.length){
+    h.innerHTML='<div class="empty">正在載入新聞…</div>';
+    return;
+  }
   var rows=NEWS.filter(function(n){
     return (!MSEL||n.tag===MSEL) && (NTONE==="all"||n.tone===NTONE);
   });
   if(!rows.length){ h.innerHTML='<div class="empty">這個篩選沒有新聞</div>'; return; }
   rows.forEach(function(n){
     var d=document.createElement("div"); d.className="nw";
+    var title=n.url
+      ? ('<a href="'+esc(n.url)+'" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:none">'+esc(n.h)+'</a>')
+      : esc(n.h);
+    var meta=(n.tag?esc(n.tag):"市場")+(n.tone?" · "+esc(n.tone):"");
     d.innerHTML='<time>'+esc(n.t)+'</time><span class="src">'+esc(n.s)+'</span>'+
-      '<p>'+esc(n.h)+'<br><span class="tag">'+esc(n.tag)+' · '+esc(n.tone)+'</span></p>';
+      '<p>'+title+'<br><span class="tag">'+meta+'</span></p>';
     h.appendChild(d);
   });
 }
@@ -823,6 +860,34 @@ $$(".tab[data-n]").forEach(function(t){
     t.classList.add("on"); NTONE=t.getAttribute("data-n"); drawFeed();
   });
 });
+
+function loadMarkets(){
+  MARKET_STATUS="loading";
+  drawMkts(); drawFeed();
+  // session cache while network runs
+  try{
+    var cached=sessionStorage.getItem("dorich_market_payload");
+    if(cached) applyMarketPayload(JSON.parse(cached));
+  }catch(e){}
+  drawMkts(); drawFeed();
+  fetch(MARKET_API, { credentials:"omit", cache:"no-store" })
+    .then(function(r){
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      return r.json();
+    })
+    .then(function(data){
+      if(!applyMarketPayload(data)) throw new Error("empty payload");
+      drawMkts(); drawFeed();
+    })
+    .catch(function(err){
+      console.warn("[market] fetch failed", err);
+      if(!MKT.length) MARKET_STATUS="error";
+      drawMkts(); drawFeed();
+    });
+}
+loadMarkets();
+// Re-poll every 15 minutes while the tab is open (matches the server job).
+setInterval(loadMarkets, 15*60*1000);
 
 /* ================= search ================= */
 var q=$("#q");
